@@ -3,6 +3,7 @@ import numpy as np
 import math
 import copy
 import sys
+from card import Card
 
 FIELDS_NUM = 3
 HANDS_NUM = 5
@@ -21,44 +22,36 @@ class State:
                 isLibraryOut=False):
         self.life = life if life != None else INITIAL_LIFE
         self.enemy_life = enemy_life if enemy_life != None else INITIAL_LIFE
-        self.fields = fields if fields != None else [[0, 0] for _ in range(FIELDS_NUM)]
-        self.enemy_fields = enemy_fields if enemy_fields != None else [[0 ,0] for _ in range(FIELDS_NUM)]
-        self.deck = deck if deck != None else [[random.randint(1, 3), random.randint(1,3)] for _ in range(DECK_NUM)]
-        self.enemy_deck = enemy_deck if enemy_deck != None else [[random.randint(1, 3), random.randint(1,3)] for _ in range(DECK_NUM)]
-        self.hands = hands if hands != None else [[0, 0] for _ in range(HANDS_NUM)]
-        self.enemy_hands = enemy_hands if enemy_hands != None else [[0, 0] for _ in range(HANDS_NUM)]
+        self.fields = fields if fields != None else []
+        self.enemy_fields = enemy_fields if enemy_fields != None else []
+        self.deck = deck if deck != None else [Card() for _ in range(DECK_NUM)]
+        self.enemy_deck = enemy_deck if enemy_deck != None else [Card() for _ in range(DECK_NUM)]
+        self.hands = hands if hands != None else []
+        self.enemy_hands = enemy_hands if enemy_hands != None else []
         self._isFirstPlayer = _isFirstPlayer
         self._isLibraryOut = isLibraryOut
     
     def pick_random_card(self, cards):
         next_cards = copy.deepcopy(cards)
-        choiced_card = random.choice([[i, card] for i, card in enumerate(next_cards) if card[1] > 0])
+        np.random.shuffle(next_cards)
+        choiced_card = next_cards.pop()
         
-        next_cards[choiced_card[0]] = [0, 0]
-        
-        return next_cards, choiced_card[1]
+        return next_cards, choiced_card
     
     def add_card(self, cards, card):
         next_cards = copy.deepcopy(cards)
-        if self.card_count(next_cards) < len(next_cards):
-            vacant_index = [i for i, _ in enumerate(next_cards) if not _[0] > 0][0]
-            next_cards[vacant_index] = card
-        else:
-            print("The cards don't have any [0, 0] zone, input cards which have at least one vacant zone.", file=sys.stderr)
-        
+        next_cards.append(card)
+               
         return next_cards
     
     def get_card_drawn_state(self):
-        if self.card_count(self.deck) > 0:    
+        if len(self.deck) > 0:    
             next_deck, picked_card = self.pick_random_card(self.deck)
-            next_hands = self.add_card(self.hands, picked_card) if self.card_count(self.hands) < HANDS_NUM else self.hands
+            next_hands = self.add_card(self.hands, picked_card) if len(self.hands) < HANDS_NUM else self.hands
             state = State(self.life, self.fields, next_hands, next_deck, self.enemy_life, self.enemy_fields, self.enemy_hands, self.enemy_deck, self.is_first_player(), isLibraryOut=False)
         else:
             state = State(self.life, self.fields, self.hands, self.deck, self.enemy_life, self.enemy_fields, self.enemy_hands, self.enemy_deck, self.is_first_player(), isLibraryOut=True)
         return state
-
-    def card_count(self, cards):
-        return sum([i[1] > 0 for i in cards])
     
     def is_lose(self):
         if self.life > 0 and not self.is_library_out():
@@ -82,55 +75,39 @@ class State:
         #play hand
         elif action >= FIELDS_NUM*(FIELDS_NUM+1):
             handId = action - FIELDS_NUM*(FIELDS_NUM+1)
-            fieldId = [i for i, x in enumerate(fields) if x[1] == 0][0]
-            fields[fieldId][0] = hands[handId][0]
-            fields[fieldId][1] = hands[handId][1]
-            for i in range(handId+1, HANDS_NUM):
-                hands[i-1][0] = hands[i][0]
-                hands[i-1][1] = hands[i][1]
-            hands[HANDS_NUM-1][0] = 0
-            hands[HANDS_NUM-1][1] = 0
+            card = hands.pop(handId)
+            fields.append(card)
+        #battle
         else:
             attacker = action // (FIELDS_NUM+1)
             subject = action % (FIELDS_NUM+1)         
  
             #life damege
             if subject == FIELDS_NUM:
-                enemy_life -= fields[attacker][0]
+                enemy_life -= fields[attacker].attack
             #battle
             elif subject < FIELDS_NUM:
-                fields[attacker][1] -= enemy_fields[subject][0]
-                enemy_fields[subject][1] -= fields[attacker][0]
-                if fields[attacker][1] <= 0:
-                    for i in range(attacker+1, FIELDS_NUM):
-                        fields[i-1][0] = fields[i][0]
-                        fields[i-1][1] = fields[i][1]
-                    fields[FIELDS_NUM-1][0] = 0
-                    fields[FIELDS_NUM-1][1] = 0
+                fields[attacker].damage(enemy_fields[subject].attack) 
+                enemy_fields[subject].damage(fields[attacker].attack)
+                if fields[attacker].health <= 0:
+                    del fields[attacker]
 
-                if enemy_fields[subject][1] <= 0:
-                    for i in range(subject+1, FIELDS_NUM):
-                        enemy_fields[i-1][0] = enemy_fields[i][0]
-                        enemy_fields[i-1][1] = enemy_fields[i][1]
-                    enemy_fields[FIELDS_NUM-1][0] = 0
-                    enemy_fields[FIELDS_NUM-1][1] = 0
+                if enemy_fields[subject].health <= 0:
+                    del enemy_fields[subject]
         
         return State(enemy_life, enemy_fields, self.enemy_hands, self.enemy_deck, self.life, fields, hands, self.deck, not self.is_first_player(), self.is_library_out())
     
     def legal_actions(self):
         actions = []
         #battle
-        for i, card in enumerate(self.fields):
-            if card[1] > 0:
-                for j, enemy_card in enumerate(self.enemy_fields):
-                    if enemy_card[1] > 0:
-                        actions.append(i*(FIELDS_NUM+1)+j)
-                actions.append(i*(FIELDS_NUM+1)+FIELDS_NUM)
+        for i, _ in enumerate(self.fields):
+            for j, _ in enumerate(self.enemy_fields):
+                actions.append(i*(FIELDS_NUM+1)+j)
+            actions.append(i*(FIELDS_NUM+1)+FIELDS_NUM)
         #hand
-        if self.card_count(self.fields) < FIELDS_NUM:
-            for i, card in enumerate(self.hands):
-                if card[1] > 0:
-                    actions.append(FIELDS_NUM*(FIELDS_NUM+1)+i)
+        if len(self.fields) < FIELDS_NUM:
+            for i, _ in enumerate(self.hands):
+                actions.append(FIELDS_NUM*(FIELDS_NUM+1)+i)
         #pass
         actions.append(FIELDS_NUM*(FIELDS_NUM+1)+HANDS_NUM)
         return actions
@@ -148,19 +125,19 @@ class State:
     
     def __str__(self):
         def getStr(firstPlayerFields, firstPlayerLife, firstPlayerHands, secondPlayerFields, secondPlayerLife, secondPlayerHands):
-            def getCardsStr(cards):
+            def getCardsStr(cards, max_num):
                 str = ''
                 for card in cards:
-                    if card[1] > 0:
-                        str += '[{0:1d}/{1:1d}] '.format(card[0], card[1])
-                    else:
-                        str += '[   ] '
+                    str += '[{0:1d}/{1:1d}] '.format(card.attack, card.health)
+                
+                for i in range(max_num - len(cards)):
+                    str += '[   ] '
                 return str
             str = '         {0:2d}\n'.format(secondPlayerLife)
-            str += getCardsStr(secondPlayerHands) + '\n'
-            str += getCardsStr(secondPlayerFields) + '\n'
-            str += getCardsStr(firstPlayerFields) + '\n'
-            str += getCardsStr(firstPlayerHands) + '\n'
+            str += getCardsStr(secondPlayerHands, HANDS_NUM) + '\n'
+            str += getCardsStr(secondPlayerFields, FIELDS_NUM) + '\n'
+            str += getCardsStr(firstPlayerFields, FIELDS_NUM) + '\n'
+            str += getCardsStr(firstPlayerHands, HANDS_NUM) + '\n'
             str += '         {0:2d}\n'.format(firstPlayerLife)
             return str
         if self.is_first_player():
@@ -260,7 +237,7 @@ if __name__ == '__main__':
         state = state.get_card_drawn_state()
         if state.is_done():
             break
-        state = state.next(mcts_action(state))
+        state = state.next(random_action(state))
         
         print(state)
         print()
