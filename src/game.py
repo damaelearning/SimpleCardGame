@@ -237,7 +237,7 @@ if __name__ == '__main__':
         state = state.get_card_drawn_state()
         if state.is_done():
             break
-        state = state.next(random_action(state))
+        state = state.next(mcts_action(state))
         
         print(state)
         print()
