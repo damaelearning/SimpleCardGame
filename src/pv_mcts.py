@@ -19,11 +19,12 @@ def predict(model, state):
             state.resize_zero_padding(state.enemy_fields, [a, b]), 
             state.resize_zero_padding(state.hands, [a, b]),
             state.resize_zero_padding(state.enemy_hands, [a, b]),
-            state.deck,
-            state.enemy_deck,
+            state.resize_zero_padding(state.deck, [a, b]),
+            state.resize_zero_padding(state.enemy_deck, [a, b]),
             [[state.life for _ in range(b)] for _ in range(a)],
             [[state.enemy_life for _ in range(b)] for _ in range(a)]])
-    x = x.transpose(1, 2, 0).reshape(1, a, b, c)
+    x = x.transpose(1, 2, 0)
+    x = x.reshape(1, a, b, c)
     x = x / INITIAL_LIFE
     y = model.predict(x, batch_size=1)
     
