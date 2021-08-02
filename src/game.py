@@ -119,7 +119,7 @@ class State:
         return self._isLibraryOut
     
     def resize_zero_padding(self, input_list, size):
-        return_array = np.array(input_list)
+        return_array = np.array([[card.attack, card.health] for card in input_list])
         return_array.resize(size, refcheck=False)
         return return_array
     
