@@ -18,8 +18,10 @@ class State:
                 enemy_fields=None,
                 enemy_hands=None,
                 enemy_deck=None,
-                _isFirstPlayer=True,
-                isLibraryOut=False):
+                isFirstPlayer=True,
+                isLibraryOut=False,
+                canPlayHand=True,
+                isStartingTurn=True):
         self.life = life if life != None else INITIAL_LIFE
         self.enemy_life = enemy_life if enemy_life != None else INITIAL_LIFE
         self.fields = fields if fields != None else []
@@ -28,8 +30,10 @@ class State:
         self.enemy_deck = enemy_deck if enemy_deck != None else [Card() for _ in range(DECK_NUM)]
         self.hands = hands if hands != None else []
         self.enemy_hands = enemy_hands if enemy_hands != None else []
-        self._isFirstPlayer = _isFirstPlayer
-        self._isLibraryOut = isLibraryOut
+        self.__isFirstPlayer = isFirstPlayer
+        self.__isLibraryOut = isLibraryOut
+        self.__canPlayHand = canPlayHand
+        self.__isStartingTurn = isStartingTurn
     
     def pick_random_card(self, cards):
         next_cards = copy.deepcopy(cards)
@@ -48,13 +52,44 @@ class State:
         if len(self.deck) > 0:    
             next_deck, picked_card = self.pick_random_card(self.deck)
             next_hands = self.add_card(self.hands, picked_card) if len(self.hands) < HANDS_NUM else self.hands
-            state = State(self.life, self.fields, next_hands, next_deck, self.enemy_life, self.enemy_fields, self.enemy_hands, self.enemy_deck, self.is_first_player(), isLibraryOut=False)
+            state = State(
+                self.life,
+                self.fields,
+                next_hands,
+                next_deck,
+                self.enemy_life,
+                self.enemy_fields,
+                self.enemy_hands,
+                self.enemy_deck,
+                self.is_first_player(),
+                isLibraryOut=False,
+                canPlayHand=self.can_play_hand(),
+                isStartingTurn=self.is_starting_turn()
+                )
         else:
-            state = State(self.life, self.fields, self.hands, self.deck, self.enemy_life, self.enemy_fields, self.enemy_hands, self.enemy_deck, self.is_first_player(), isLibraryOut=True)
+            state = State(
+                self.life,
+                self.fields,
+                self.hands,
+                self.deck,
+                self.enemy_life,
+                self.enemy_fields,
+                self.enemy_hands,
+                self.enemy_deck,
+                self.is_first_player(),
+                isLibraryOut=True,
+                canPlayHand=self.can_play_hand(),
+                isStartingTurn=self.is_starting_turn())
+        
         return state
     
     def is_lose(self):
         if self.life > 0 and not self.is_library_out():
+            return False
+        return True
+
+    def is_win(self):
+        if self.enemy_life > 0:
             return False
         return True
     
@@ -62,7 +97,7 @@ class State:
         return False
     
     def is_done(self):
-        return self.is_lose() or self.is_draw()
+        return self.is_win() or self.is_lose() or self.is_draw()
     
     def next(self, action):
         hands = copy.deepcopy(self.hands)
@@ -71,17 +106,43 @@ class State:
         enemy_life = self.enemy_life
         #pass
         if action == FIELDS_NUM*(FIELDS_NUM+1)+HANDS_NUM:
-            pass
+            return State(
+                enemy_life,
+                enemy_fields,
+                self.enemy_hands,
+                self.enemy_deck,
+                self.life,
+                fields,
+                hands,
+                self.deck,
+                not self.is_first_player(),
+                isLibraryOut=False,
+                canPlayHand=True,
+                isStartingTurn=True) 
         #play hand
         elif action >= FIELDS_NUM*(FIELDS_NUM+1):
             handId = action - FIELDS_NUM*(FIELDS_NUM+1)
             card = hands.pop(handId)
             fields.append(card)
+            return State(
+                    self.life,
+                    fields, 
+                    hands,
+                    self.deck,
+                    enemy_life,
+                    enemy_fields,
+                    self.enemy_hands,
+                    self.enemy_deck,
+                    self.is_first_player(),
+                    self.is_library_out(),
+                    canPlayHand=False,
+                    isStartingTurn=False)
         #battle
         else:
             attacker = action // (FIELDS_NUM+1)
-            subject = action % (FIELDS_NUM+1)         
- 
+            subject = action % (FIELDS_NUM+1)
+            fields[attacker].is_attackable = False
+
             #life damege
             if subject == FIELDS_NUM:
                 enemy_life -= fields[attacker].attack
@@ -94,18 +155,32 @@ class State:
 
                 if enemy_fields[subject].health <= 0:
                     del enemy_fields[subject]
-        
-        return State(enemy_life, enemy_fields, self.enemy_hands, self.enemy_deck, self.life, fields, hands, self.deck, not self.is_first_player(), self.is_library_out())
+            
+            return State(
+                    self.life,
+                    fields, 
+                    hands,
+                    self.deck,
+                    enemy_life,
+                    enemy_fields,
+                    self.enemy_hands,
+                    self.enemy_deck,
+                    self.is_first_player(),
+                    self.is_library_out(),
+                    canPlayHand=self.can_play_hand(),
+                    isStartingTurn=False)
     
     def legal_actions(self):
         actions = []
         #battle
-        for i, _ in enumerate(self.fields):
-            for j, _ in enumerate(self.enemy_fields):
-                actions.append(i*(FIELDS_NUM+1)+j)
-            actions.append(i*(FIELDS_NUM+1)+FIELDS_NUM)
+        for i, card in enumerate(self.fields):
+            if card.is_attackable:
+                for j, _ in enumerate(self.enemy_fields):
+                    actions.append(i*(FIELDS_NUM+1)+j)
+                #attack player
+                actions.append(i*(FIELDS_NUM+1)+FIELDS_NUM)
         #hand
-        if len(self.fields) < FIELDS_NUM:
+        if self.can_play_hand() and len(self.fields) < FIELDS_NUM:
             for i, _ in enumerate(self.hands):
                 actions.append(FIELDS_NUM*(FIELDS_NUM+1)+i)
         #pass
@@ -113,10 +188,40 @@ class State:
         return actions
     
     def is_first_player(self):
-        return self._isFirstPlayer
+        return self.__isFirstPlayer
     
     def is_library_out(self):
-        return self._isLibraryOut
+        return self.__isLibraryOut
+    
+    def is_starting_turn(self):
+        return self.__isStartingTurn
+    
+    def can_play_hand(self):
+        return self.__canPlayHand
+
+    def make_all_cards_attackable(self):
+        fields = copy.deepcopy(self.fields)
+        for card in fields:
+            card.is_attackable = True
+        return State(
+                    self.life,
+                    fields, 
+                    self.hands,
+                    self.deck,
+                    self.enemy_life,
+                    self.enemy_fields,
+                    self.enemy_hands,
+                    self.enemy_deck,
+                    self.is_first_player(),
+                    self.is_library_out(),
+                    canPlayHand=self.can_play_hand(),
+                    isStartingTurn=self.is_starting_turn())
+
+    def start_turn(self):
+        state = self.get_card_drawn_state()
+        state = state.make_all_cards_attackable()
+        return state
+    
     
     def resize_zero_padding(self, input_list, size):
         return_array = np.array([[card.attack, card.health] for card in input_list])
@@ -150,13 +255,23 @@ def random_action(state):
     return legal_actions[random.randint(0, len(legal_actions)-1)]
 
 def playout(state):
-    drawn_state = state.get_card_drawn_state()
+    drawn_state = state.get_card_drawn_state() if state.is_starting_turn() else state
+    
+    if drawn_state.is_win():
+        return 1
+
     if drawn_state.is_lose():
         return -1
     
     if drawn_state.is_draw():
         return 0
-    return -playout(drawn_state.next(random_action(drawn_state)))
+    
+    next_state = drawn_state.next(random_action(drawn_state))
+    
+    if next_state.is_first_player() == drawn_state.is_first_player():
+        return playout(next_state)
+    else:
+        return -playout(next_state)
 
 def argmax(collection, key=None):
     return collection.index(max(collection))
@@ -171,7 +286,12 @@ def mcts_action(state):
         
         def evaluate(self):
             if self.state.is_done():
-                value = -1 if self.state.is_lose() else 0
+                if self.state.is_lose():
+                    value = -1
+                if self.state.is_win():
+                    value = 1
+                else:
+                    value = 0
                 
                 self.w += value
                 self.n += 1
@@ -188,7 +308,11 @@ def mcts_action(state):
                 return value
             
             else:
-                value = -self.next_child_node().evaluate()
+                next_child_node = self.next_child_node()
+                if next_child_node.state.is_first_player() == self.state.is_first_player():
+                    value = next_child_node.evaluate()
+                else:
+                    value = -next_child_node.evaluate()
 
                 self.w += value
                 self.n += 1
@@ -210,7 +334,8 @@ def mcts_action(state):
                 t += c.n
             ucb1_values = []
             for child_node in self.child_nodes:
-                ucb1_values.append(-child_node.w/child_node.n+(2*math.log(t)/child_node.n)**0.5)
+                w = -child_node.w if child_node.state.is_first_player() != self.state.is_first_player() else child_node.w
+                ucb1_values.append(w/child_node.n+(2*math.log(t)/child_node.n)**0.5)
             
             return self.child_nodes[argmax(ucb1_values)]
     
@@ -234,7 +359,8 @@ if __name__ == '__main__':
         state = State(state.enemy_life, state.enemy_fields, state.enemy_hands, state.enemy_deck, state.life, state.fields, state.hands, state.deck, not state.is_first_player())
 
     while True:
-        state = state.get_card_drawn_state()
+
+        state = state.start_turn() if state.is_starting_turn() else state
         if state.is_done():
             break
         state = state.next(mcts_action(state))
