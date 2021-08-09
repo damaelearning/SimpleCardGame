@@ -359,7 +359,6 @@ if __name__ == '__main__':
         state = State(state.enemy_life, state.enemy_fields, state.enemy_hands, state.enemy_deck, state.life, state.fields, state.hands, state.deck, not state.is_first_player())
 
     while True:
-
         state = state.start_turn() if state.is_starting_turn() else state
         if state.is_done():
             break
