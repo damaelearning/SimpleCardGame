@@ -51,7 +51,12 @@ def pv_mcts_scores(model, state, temperature):
         
         def evaluate(self):
             if self.state.is_done():
-                value = -1 if self.state.is_lose() else 0
+                if self.state.is_lose():
+                    value = -1
+                if self.state.is_win():
+                    value = 1
+                else:
+                    value = 0
                 
                 self.w += value
                 self.n += 1
@@ -69,7 +74,11 @@ def pv_mcts_scores(model, state, temperature):
                 return value
         
             else:
-                value = -self.next_child_node().evaluate()
+                next_child_node = self.next_child_node()
+                if next_child_node.state.is_first_player() == self.state.is_first_player():
+                    value = next_child_node.evaluate()
+                else:
+                    value = -self.next_child_node().evaluate()
                 
                 self.w += value
                 self.n += 1
@@ -80,7 +89,8 @@ def pv_mcts_scores(model, state, temperature):
             t = sum(nodes_to_scores(self.child_nodes))
             pucb_values = []
             for child_node in self.child_nodes:
-                pucb_values.append((-child_node.w / child_node.n if child_node.n else 0.0) +
+                w = -child_node.w if child_node.state.is_first_player() != self.state.is_first_player() else child_node.w
+                pucb_values.append((w / child_node.n if child_node.n else 0.0) +
                     C_PUCT * child_node.p * sqrt(t) / (1 + child_node.n))
             
             return self.child_nodes[np.argmax(pucb_values)]
@@ -122,7 +132,7 @@ if __name__ == '__main__':
     next_action = pv_mcts_action(model, 1.0)
     
     while True:
-        state = state.get_card_drawn_state()
+        state = state.start_turn() if state.is_starting_turn() else state
         if state.is_done():
             break
         
