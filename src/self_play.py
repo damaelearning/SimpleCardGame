@@ -24,7 +24,7 @@ SP_GAME_COUNT = 50
 SP_TEMPERATURE = 1.0
 
 def first_player_value(ended_state):
-    if ended_state.is_lose():
+    if ended_state.is_lose() or not ended_state.is_win():
         return -1 if ended_state.is_first_player() else 1
     return 0
 
@@ -47,7 +47,7 @@ def play(model):
     a, b, _ = DN_INPUT_SHAPE
 
     while True:
-        state = state.get_card_drawn_state()
+        state = state.start_turn() if state.is_starting_turn() else state
         if state.is_done():
             break
 
@@ -66,7 +66,7 @@ def play(model):
                 [[state.life for _ in range(b)] for _ in range(a)],
                 [[state.enemy_life for _ in range(b)] for _ in range(a)]], 
                 policies, 
-                None])
+                state.is_first_player()])
 
         action = np.random.choice(state.legal_actions(), p=scores)
 
@@ -74,8 +74,7 @@ def play(model):
     
     value = first_player_value(state)
     for i in range(len(history)):
-        history[i][2] = value
-        value = -value
+        history[i][2] = value if history[i][2] else -value
     return history
 
 def self_play(batch, count,  history):
