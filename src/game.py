@@ -8,7 +8,7 @@ from card import Card
 FIELDS_NUM = 3
 HANDS_NUM = 5
 DECK_NUM = 15
-INITIAL_LIFE = 10
+INITIAL_LIFE = 20
 class State:
     def __init__(self, life = None,
                 fields=None,
@@ -342,7 +342,7 @@ def mcts_action(state):
     root_node = Node(state)
     root_node.expand()
     
-    for _ in range(100):
+    for _ in range(1000):
         root_node.evaluate()
     
     legal_actions = state.legal_actions()
