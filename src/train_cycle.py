@@ -8,7 +8,7 @@ from evaluate_best_player import multi_process_evaluate_best_player
 if __name__ == '__main__':
     dual_network()
 
-    for i in range(10):
+    for i in range(5):
         print('Train',i,'====================')
         
         multiProcessSelfPlay(5)
