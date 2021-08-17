@@ -43,7 +43,20 @@ def play(model):
     for _ in range(2):
         for _ in range(2):
             state = state.get_card_drawn_state()
-        state = State(state.enemy_life, state.enemy_fields, state.enemy_hands, state.enemy_deck, state.life, state.fields, state.hands, state.deck, not state.is_first_player())
+        state = State(
+            state.enemy_life, 
+            state.enemy_fields, 
+            state.enemy_hands, 
+            state.enemy_deck, 
+            state.life, 
+            state.fields, 
+            state.hands, 
+            state.deck, 
+            not state.is_first_player(),
+            isLibraryOut=False,
+            canPlayHand=True,
+            isStartingTurn=True)
+
     a, b, _ = DN_INPUT_SHAPE
 
     while True:
