@@ -60,6 +60,8 @@ def play(model):
     a, b, _ = DN_INPUT_SHAPE
 
     while True:
+        if state.is_done():
+            break
         state = state.start_turn() if state.is_starting_turn() else state
         if state.is_done():
             break
