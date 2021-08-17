@@ -8,7 +8,7 @@ import tensorflow as tf
 import copy
 from const import MODEL_DIR
 
-PV_EVALUATE_COUNT = 50
+PV_EVALUATE_COUNT = 500
 
 def predict(model, state):
     
@@ -127,11 +127,25 @@ if __name__ == '__main__':
     for _ in range(2):
         for _ in range(2):
             state = state.get_card_drawn_state()
-        state = State(state.enemy_life, state.enemy_fields, state.enemy_hands, state.enemy_deck, state.life, state.fields, state.hands, state.deck, not state.is_first_player())
+        state = State(
+            state.enemy_life, 
+            state.enemy_fields, 
+            state.enemy_hands, 
+            state.enemy_deck, 
+            state.life, 
+            state.fields, 
+            state.hands, 
+            state.deck, 
+            not state.is_first_player(),
+            isLibraryOut=False,
+            canPlayHand=True,
+            isStartingTurn=True)
     
     next_action = pv_mcts_action(model, 1.0)
     
     while True:
+        if state.is_done():
+            break;
         state = state.start_turn() if state.is_starting_turn() else state
         if state.is_done():
             break
