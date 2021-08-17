@@ -19,7 +19,7 @@ from const import MODEL_DIR
 EP_GAME_COUNT = 100
 
 def first_player_point(ended_state):
-    if ended_state.is_lose():
+    if ended_state.is_lose() or not ended_state.is_win():
         return 0 if ended_state.is_first_player() else 1
     return 0.5
 
@@ -28,10 +28,24 @@ def play(next_actions):
     for _ in range(2):
         for _ in range(2):
             state = state.get_card_drawn_state()
-        state = State(state.enemy_life, state.enemy_fields, state.enemy_hands, state.enemy_deck, state.life, state.fields, state.hands, state.deck, not state.is_first_player())
+        state = State(
+            state.enemy_life, 
+            state.enemy_fields, 
+            state.enemy_hands, 
+            state.enemy_deck, 
+            state.life, 
+            state.fields, 
+            state.hands, 
+            state.deck, 
+            not state.is_first_player(),
+            isLibraryOut=False,
+            canPlayHand=True,
+            isStartingTurn=True)
 
     while True:
-        state = state.get_card_drawn_state()
+        if state.is_done():
+            break;
+        state = state.start_turn() if state.is_starting_turn() else state
         if state.is_done():
             break
 
