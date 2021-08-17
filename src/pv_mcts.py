@@ -78,7 +78,7 @@ def pv_mcts_scores(model, state, temperature):
                 if next_child_node.state.is_first_player() == self.state.is_first_player():
                     value = next_child_node.evaluate()
                 else:
-                    value = -self.next_child_node().evaluate()
+                    value = -next_child_node.evaluate()
                 
                 self.w += value
                 self.n += 1
