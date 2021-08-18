@@ -15,12 +15,12 @@ def predict(model, state):
 
     a, b, c = DN_INPUT_SHAPE
     x = np.array([
-            state.resize_zero_padding(state.fields, [a, b]), 
-            state.resize_zero_padding(state.enemy_fields, [a, b]), 
-            state.resize_zero_padding(state.hands, [a, b]),
-            state.resize_zero_padding(state.enemy_hands, [a, b]),
-            state.resize_zero_padding(state.deck, [a, b]),
-            state.resize_zero_padding(state.enemy_deck, [a, b]),
+            state.resize_zero_padding(state.get_status_list[state.fields], [a, b]), 
+            state.resize_zero_padding(state.get_status_list[state.enemy_fields], [a, b]), 
+            state.resize_zero_padding(state.get_status_list[state.hands], [a, b]),
+            state.resize_zero_padding(state.get_status_list[state.enemy_hands], [a, b]),
+            state.resize_zero_padding(state.get_status_list[state.deck], [a, b]),
+            state.resize_zero_padding(state.get_status_list[state.enemy_deck], [a, b]),
             [[state.life for _ in range(b)] for _ in range(a)],
             [[state.enemy_life for _ in range(b)] for _ in range(a)]])
     x = x.transpose(1, 2, 0)
