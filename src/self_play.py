@@ -20,7 +20,7 @@ import os
 import multiprocessing
 from const import MODEL_DIR, HISTORY_DIR
 
-SP_GAME_COUNT = 500
+SP_GAME_COUNT = 3000
 SP_TEMPERATURE = 1.0
 
 def first_player_value(ended_state):
@@ -72,14 +72,16 @@ def play(model):
         for action, policy in zip(state.legal_actions(), scores):
             policies[action] = policy
         history.append([[
-                state.resize_zero_padding(state.fields, [a, b]), 
-                state.resize_zero_padding(state.enemy_fields, [a, b]), 
-                state.resize_zero_padding(state.hands, [a, b]),
-                state.resize_zero_padding(state.enemy_hands, [a, b]),
-                state.resize_zero_padding(state.deck, [a, b]),
-                state.resize_zero_padding(state.enemy_deck, [a, b]),
+                state.resize_zero_padding(state.get_status_list(state.fields), [a, b]), 
+                state.resize_zero_padding(state.get_status_list(state.enemy_fields), [a, b]), 
+                state.resize_zero_padding(state.get_status_list(state.hands), [a, b]),
+                state.resize_zero_padding(state.get_status_list(state.enemy_hands), [a, b]),
+                state.resize_zero_padding(state.get_status_list(state.deck), [a, b]),
+                state.resize_zero_padding(state.get_status_list(state.enemy_deck), [a, b]),
+                state.resize_zero_padding(state.get_attackable_list(state.fields), [a, b]),
                 [[state.life for _ in range(b)] for _ in range(a)],
-                [[state.enemy_life for _ in range(b)] for _ in range(a)]], 
+                [[state.enemy_life for _ in range(b)] for _ in range(a)],
+                [[float(state.can_play_hand()) for _ in range(b)] for _ in range(a)]], 
                 policies, 
                 state.is_first_player()])
 

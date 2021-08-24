@@ -8,14 +8,14 @@ from evaluate_best_player import multi_process_evaluate_best_player
 if __name__ == '__main__':
     dual_network()
 
-    for i in range(5):
+    for i in range(3):
         print('Train',i,'====================')
         
-        multiProcessSelfPlay(5)
+        multiProcessSelfPlay(4)
 
         train_network()
 
-        update_best_player = multi_process_evaluate_network(5)
+        update_best_player = multi_process_evaluate_network(4)
 
         if update_best_player:
-            multi_process_evaluate_best_player(5)
+            multi_process_evaluate_best_player(4)
