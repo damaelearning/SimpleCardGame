@@ -228,11 +228,14 @@ class State:
         return_array.resize(size, refcheck=False)
         return return_array
     
-    def get_status_list(self, input_list):
-        return [[card.attack, card.health] for card in input_list]
+    def get_attack_list(self, input_list):
+        return [card.attack for card in input_list]
+
+    def get_health_list(self, input_list):
+        return [card.health for card in input_list]
 
     def get_attackable_list(self, input_list):
-        return [[float(card.is_attackable), float(card.is_attackable)] for card in input_list]
+        return [float(card.is_attackable) for card in input_list]
     
     def __str__(self):
         def getStr(firstPlayerFields, firstPlayerLife, firstPlayerHands, secondPlayerFields, secondPlayerLife, secondPlayerHands):

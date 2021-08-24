@@ -14,17 +14,25 @@ def predict(model, state):
     
 
     a, b, c = DN_INPUT_SHAPE
+    x = [state.resize_zero_padding(state.get_attack_list(state.fields), a),
+        state.resize_zero_padding(state.get_health_list(state.fields), a), 
+        state.resize_zero_padding(state.get_attackable_list(state.fields), a),
+        state.resize_zero_padding(state.get_attack_list(state.enemy_fields), a), 
+        state.resize_zero_padding(state.get_health_list(state.enemy_fields), a), 
+        state.resize_zero_padding(state.get_attack_list(state.hands), a),
+        state.resize_zero_padding(state.get_health_list(state.hands), a),
+        state.resize_zero_padding(state.get_attack_list(state.enemy_hands), a),
+        state.resize_zero_padding(state.get_health_list(state.enemy_hands), a),
+        state.resize_zero_padding(state.get_attack_list(state.deck), a),
+        state.resize_zero_padding(state.get_health_list(state.deck), a),
+        state.resize_zero_padding(state.get_attack_list(state.enemy_deck), a),
+        state.resize_zero_padding(state.get_health_list(state.enemy_deck), a)]
+
     x = np.array([
-            state.resize_zero_padding(state.get_status_list(state.fields), [a, b]), 
-            state.resize_zero_padding(state.get_status_list(state.enemy_fields), [a, b]), 
-            state.resize_zero_padding(state.get_status_list(state.hands), [a, b]),
-            state.resize_zero_padding(state.get_status_list(state.enemy_hands), [a, b]),
-            state.resize_zero_padding(state.get_status_list(state.deck), [a, b]),
-            state.resize_zero_padding(state.get_status_list(state.enemy_deck), [a, b]),
-            state.resize_zero_padding(state.get_attackable_list(state.fields), [a, b]),
-            [[state.life for _ in range(b)] for _ in range(a)],
-            [[state.enemy_life for _ in range(b)] for _ in range(a)],
-            [[float(state.can_play_hand()) for _ in range(b)] for _ in range(a)]])
+            x,
+            [[state.life for _ in range(a)] for _ in range(b)],
+            [[state.enemy_life for _ in range(a)] for _ in range(b)],
+            [[float(state.can_play_hand()) for _ in range(a)] for _ in range(b)]])
     x = x.transpose(1, 2, 0)
     x = x.reshape(1, a, b, c)
     x = x / INITIAL_LIFE

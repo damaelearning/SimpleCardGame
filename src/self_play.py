@@ -71,17 +71,25 @@ def play(model):
         policies = [0] * DN_OUTPUT_SIZE
         for action, policy in zip(state.legal_actions(), scores):
             policies[action] = policy
-        history.append([[
-                state.resize_zero_padding(state.get_status_list(state.fields), [a, b]), 
-                state.resize_zero_padding(state.get_status_list(state.enemy_fields), [a, b]), 
-                state.resize_zero_padding(state.get_status_list(state.hands), [a, b]),
-                state.resize_zero_padding(state.get_status_list(state.enemy_hands), [a, b]),
-                state.resize_zero_padding(state.get_status_list(state.deck), [a, b]),
-                state.resize_zero_padding(state.get_status_list(state.enemy_deck), [a, b]),
-                state.resize_zero_padding(state.get_attackable_list(state.fields), [a, b]),
-                [[state.life for _ in range(b)] for _ in range(a)],
-                [[state.enemy_life for _ in range(b)] for _ in range(a)],
-                [[float(state.can_play_hand()) for _ in range(b)] for _ in range(a)]], 
+        
+        x = [state.resize_zero_padding(state.get_attack_list(state.fields), a),
+        state.resize_zero_padding(state.get_health_list(state.fields), a), 
+        state.resize_zero_padding(state.get_attackable_list(state.fields), a),
+        state.resize_zero_padding(state.get_attack_list(state.enemy_fields), a), 
+        state.resize_zero_padding(state.get_health_list(state.enemy_fields), a), 
+        state.resize_zero_padding(state.get_attack_list(state.hands), a),
+        state.resize_zero_padding(state.get_health_list(state.hands), a),
+        state.resize_zero_padding(state.get_attack_list(state.enemy_hands), a),
+        state.resize_zero_padding(state.get_health_list(state.enemy_hands), a),
+        state.resize_zero_padding(state.get_attack_list(state.deck), a),
+        state.resize_zero_padding(state.get_health_list(state.deck), a),
+        state.resize_zero_padding(state.get_attack_list(state.enemy_deck), a),
+        state.resize_zero_padding(state.get_health_list(state.enemy_deck), a)]
+
+        history.append([[x,
+                [[state.life for _ in range(a)] for _ in range(b)],
+                [[state.enemy_life for _ in range(a)] for _ in range(b)],
+                [[float(state.can_play_hand()) for _ in range(a)] for _ in range(b)]], 
                 policies, 
                 state.is_first_player()])
 
