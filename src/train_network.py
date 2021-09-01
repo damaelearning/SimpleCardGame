@@ -31,7 +31,6 @@ def train_network():
     xs = np.array(xs)
     xs = xs.transpose(0, 2, 3, 1)
     xs = xs.reshape(len(xs), a, b, c)   
-    xs = xs/INITIAL_LIFE
     y_policies = np.array(y_policies)
     y_values = np.array(y_values)
 

@@ -14,28 +14,28 @@ def predict(model, state):
     
 
     a, b, c = DN_INPUT_SHAPE
-    x = [state.resize_zero_padding(state.get_attack_list(state.fields), a),
-        state.resize_zero_padding(state.get_health_list(state.fields), a), 
-        state.resize_zero_padding(state.get_attackable_list(state.fields), a),
-        state.resize_zero_padding(state.get_attack_list(state.enemy_fields), a), 
-        state.resize_zero_padding(state.get_health_list(state.enemy_fields), a), 
-        state.resize_zero_padding(state.get_attack_list(state.hands), a),
-        state.resize_zero_padding(state.get_health_list(state.hands), a),
-        state.resize_zero_padding(state.get_attack_list(state.enemy_hands), a),
-        state.resize_zero_padding(state.get_health_list(state.enemy_hands), a),
-        state.resize_zero_padding(state.get_attack_list(state.deck), a),
-        state.resize_zero_padding(state.get_health_list(state.deck), a),
-        state.resize_zero_padding(state.get_attack_list(state.enemy_deck), a),
-        state.resize_zero_padding(state.get_health_list(state.enemy_deck), a)]
+    coef = 1/INITIAL_LIFE
+    x = [state.resize_zero_padding(state.get_attack_list(state.fields), b) * coef,
+        state.resize_zero_padding(state.get_health_list(state.fields), b) * coef,  
+        state.resize_zero_padding(state.get_attack_list(state.hands), b) * coef,
+        state.resize_zero_padding(state.get_health_list(state.hands), b) * coef,
+        state.resize_zero_padding(state.get_attack_list(state.deck), b) * coef,
+        state.resize_zero_padding(state.get_health_list(state.deck), b) * coef,
+        state.resize_zero_padding(state.get_health_list(state.enemy_deck), b) * coef,
+        state.resize_zero_padding(state.get_attack_list(state.enemy_deck), b) * coef,
+        state.resize_zero_padding(state.get_health_list(state.enemy_hands), b) * coef,
+        state.resize_zero_padding(state.get_attack_list(state.enemy_hands), b) * coef,
+        state.resize_zero_padding(state.get_health_list(state.enemy_fields), b) * coef, 
+        state.resize_zero_padding(state.get_attack_list(state.enemy_fields), b) * coef]
 
     x = np.array([
             x,
-            [[state.life for _ in range(a)] for _ in range(b)],
-            [[state.enemy_life for _ in range(a)] for _ in range(b)],
-            [[float(state.can_play_hand()) for _ in range(a)] for _ in range(b)]])
+            [[state.life * coef for _ in range(b)] for _ in range(a)],
+            [[state.enemy_life * coef for _ in range(b)] for _ in range(a)],
+            [state.resize_zero_padding(state.get_attackable_list(state.fields), b) for _ in range(a)],
+            [[float(state.can_play_hand()) for _ in range(b)] for _ in range(a)]])
     x = x.transpose(1, 2, 0)
     x = x.reshape(1, a, b, c)
-    x = x / INITIAL_LIFE
     y = model.predict(x, batch_size=1)
     
     policies = y[0][0][list(state.legal_actions())]
@@ -130,7 +130,7 @@ def boltzman(xs, temperature):
     return [x / sum(xs) for x in xs]
 
 if __name__ == '__main__':
-    path = sorted(Path(MODEL_DIR).glob('*.h5'))[-1]
+    path = sorted(Path(MODEL_DIR).glob('best.h5'))[-1]
     model = load_model(str(path))
     
     state = State()
