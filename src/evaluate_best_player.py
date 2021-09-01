@@ -19,8 +19,10 @@ from const import MODEL_DIR
 EP_GAME_COUNT = 100
 
 def first_player_point(ended_state):
-    if ended_state.is_lose() or not ended_state.is_win():
+    if ended_state.is_lose():
         return 0 if ended_state.is_first_player() else 1
+    if ended_state.is_win():
+        return 1 if ended_state.is_first_player() else 0
     return 0.5
 
 def play(next_actions):

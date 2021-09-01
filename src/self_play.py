@@ -7,7 +7,7 @@ if len(physical_devices) > 0:
 else:
     print("Not enough GPU hardware devices available")
 import time
-from game import State, FIELDS_NUM
+from game import INITIAL_LIFE, State, FIELDS_NUM
 from pv_mcts import pv_mcts_scores
 from dual_network import DN_OUTPUT_SIZE, DN_INPUT_SHAPE
 from datetime import datetime
@@ -24,8 +24,10 @@ SP_GAME_COUNT = 3000
 SP_TEMPERATURE = 1.0
 
 def first_player_value(ended_state):
-    if ended_state.is_lose() or not ended_state.is_win():
+    if ended_state.is_lose():
         return -1 if ended_state.is_first_player() else 1
+    if ended_state.is_win():
+        return 1 if ended_state.is_first_player() else -1
     return 0
 
 def write_data(history):
@@ -58,6 +60,7 @@ def play(model):
             isStartingTurn=True)
 
     a, b, _ = DN_INPUT_SHAPE
+    coef = 1/INITIAL_LIFE
 
     while True:
         if state.is_done():
