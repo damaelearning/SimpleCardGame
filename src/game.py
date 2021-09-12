@@ -55,7 +55,7 @@ class State:
             state = State(
                 self.life,
                 self.fields,
-                next_hands,
+                random.shuffle(next_hands),
                 next_deck,
                 self.enemy_life,
                 self.enemy_fields,

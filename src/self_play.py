@@ -77,14 +77,14 @@ def play(model):
         
         x = [state.resize_zero_padding(state.get_attack_list(state.fields), b) * coef,
         state.resize_zero_padding(state.get_health_list(state.fields), b) * coef, 
-        state.resize_zero_padding(state.get_attack_list(state.hands), b) * coef,
-        state.resize_zero_padding(state.get_health_list(state.hands), b) * coef,
+        state.resize_zero_padding(state.get_attack_list(state.hands)), b) * coef,
+        state.resize_zero_padding(state.get_health_list(state.hands)), b) * coef,
         state.resize_zero_padding(state.get_attack_list(state.deck), b) * coef,
         state.resize_zero_padding(state.get_health_list(state.deck), b) * coef,
         state.resize_zero_padding(state.get_health_list(state.enemy_deck), b) * coef,
         state.resize_zero_padding(state.get_attack_list(state.enemy_deck), b) * coef,
-        state.resize_zero_padding(state.get_health_list(state.enemy_hands), b) * coef,
-        state.resize_zero_padding(state.get_attack_list(state.enemy_hands), b) * coef,
+        state.resize_zero_padding(state.get_health_list(state.enemy_hands)), b) * coef,
+        state.resize_zero_padding(state.get_attack_list(state.enemy_hands)), b) * coef,
         state.resize_zero_padding(state.get_health_list(state.enemy_fields), b) * coef,  
         state.resize_zero_padding(state.get_attack_list(state.enemy_fields), b) * coef]
 
