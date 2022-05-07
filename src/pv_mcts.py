@@ -1,6 +1,6 @@
 from game import DECK_NUM, State, FIELDS_NUM, INITIAL_LIFE, HANDS_NUM
 from dual_network import DN_INPUT_SHAPE
-from math import sqrt
+from math import sqrt, log10
 from tensorflow.keras.models import load_model
 from pathlib import Path
 import numpy as np
@@ -8,7 +8,7 @@ import tensorflow as tf
 import copy
 from const import MODEL_DIR
 
-PV_EVALUATE_COUNT = 50
+PV_EVALUATE_COUNT = 200
 
 def predict(model, state):
     
@@ -95,8 +95,8 @@ def pv_mcts_scores(model, state, temperature):
                 return value
                 
         def next_child_node(self):
-            C_PUCT = 1.0
             t = sum(nodes_to_scores(self.child_nodes))
+            C_PUCT = log10((1+t+19652)/19652+1.25)
             pucb_values = []
             for child_node in self.child_nodes:
                 w = -child_node.w if child_node.state.is_first_player() != self.state.is_first_player() else child_node.w

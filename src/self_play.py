@@ -20,7 +20,7 @@ import os
 import multiprocessing
 from const import MODEL_DIR, HISTORY_DIR
 
-SP_GAME_COUNT = 3000
+SP_GAME_COUNT = 1000
 SP_TEMPERATURE = 1.0
 
 def first_player_value(ended_state):
