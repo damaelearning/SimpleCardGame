@@ -26,8 +26,16 @@ class State:
         self.enemy_life = enemy_life if enemy_life != None else INITIAL_LIFE
         self.fields = fields if fields != None else []
         self.enemy_fields = enemy_fields if enemy_fields != None else []
-        self.deck = deck if deck != None else [Card() for _ in range(DECK_NUM)]
-        self.enemy_deck = enemy_deck if enemy_deck != None else [Card() for _ in range(DECK_NUM)]
+        if deck == None:
+            self.deck = [Card(i+1, j+1) for i in range(3) for j in range(3)]
+            self.deck.extend([Card(i+1, j+1) for i in range(2) for j in range(3)])
+        else: 
+            self.deck = deck
+        if enemy_deck == None:
+            self.enemy_deck = [Card(i+1, j+1) for i in range(3) for j in range(3)]
+            self.enemy_deck.extend([Card(i+1, j+1) for i in range(2) for j in range(3)])
+        else: 
+            self.enemy_deck = enemy_deck
         self.hands = hands if hands != None else []
         self.enemy_hands = enemy_hands if enemy_hands != None else []
         self.__isFirstPlayer = isFirstPlayer
@@ -52,10 +60,11 @@ class State:
         if len(self.deck) > 0:    
             next_deck, picked_card = self.pick_random_card(self.deck)
             next_hands = self.add_card(self.hands, picked_card) if len(self.hands) < HANDS_NUM else self.hands
+            random.shuffle(next_hands)
             state = State(
                 self.life,
                 self.fields,
-                random.shuffle(next_hands),
+                next_hands,
                 next_deck,
                 self.enemy_life,
                 self.enemy_fields,
