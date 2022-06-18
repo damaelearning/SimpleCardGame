@@ -7,8 +7,8 @@ if len(physical_devices) > 0:
         print('{} memory growth: {}'.format(device, tf.config.experimental.get_memory_growth(device)))
 else:
     print("Not enough GPU hardware devices available")
-from game import State, random_action, mcts_action
-from pv_mcts import pv_mcts_action
+from game import State, random_action, mcts_action, ismcts_action
+from pv_mcts import pv_mcts_action, pv_ismcts_action
 from tensorflow.keras.models import load_model
 from tensorflow.keras import backend as K
 from pathlib import Path
@@ -73,15 +73,9 @@ def evaluate_algorithm_of(label, next_actions, batch, count, total_point):
 def evaluate_best_player(batch, count, total_point):
     model = load_model(MODEL_DIR/'best.h5')
 
-    next_pv_mcts_action = pv_mcts_action(model, 0.0)
+    next_pv_ismcts_action = pv_ismcts_action(model, 0.0)
 
-    #next_actions = (next_pv_mcts_action, random_action)
-    #evaluate_algorithm_of('VS_Random', next_actions)
-
-    #next_actions = (next_pv_mcts_action, alpha_beta_action)
-    #evaluate_algorithm_of('VS_AlphaBeta', next_actions)
-
-    next_actions = (next_pv_mcts_action, mcts_action)
+    next_actions = (next_pv_ismcts_action, mcts_action)
     evaluate_algorithm_of('VS_MCTS', next_actions, batch, count, total_point)
 
     K.clear_session()
