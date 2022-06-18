@@ -7,8 +7,8 @@ if len(physical_devices) > 0:
 else:
     print("Not enough GPU hardware devices available")
 import time
-from game import INITIAL_LIFE, State, FIELDS_NUM
-from pv_mcts import pv_mcts_scores
+from game import INITIAL_LIFE, State, FIELDS_NUM, HANDS_NUM
+from pv_mcts import pv_ismcts_scores
 from dual_network import DN_OUTPUT_SIZE, DN_INPUT_SHAPE
 from datetime import datetime
 from tensorflow.keras.models import load_model
@@ -20,7 +20,7 @@ import os
 import multiprocessing
 from const import MODEL_DIR, HISTORY_DIR
 
-SP_GAME_COUNT = 1000
+SP_GAME_COUNT = 500
 SP_TEMPERATURE = 1.0
 
 def first_player_value(ended_state):
@@ -69,10 +69,10 @@ def play(model):
         if state.is_done():
             break
 
-        scores = pv_mcts_scores(model, state, SP_TEMPERATURE)
+        scores = pv_ismcts_scores(model, state, SP_TEMPERATURE)
 
         policies = [0] * DN_OUTPUT_SIZE
-        for action, policy in zip(state.legal_actions(), scores):
+        for action, policy in zip(range(FIELDS_NUM*(FIELDS_NUM+1)+HANDS_NUM+1), scores):
             policies[action] = policy
         
         x = [state.resize_zero_padding(state.get_attack_list(state.fields), b) * coef,
@@ -96,7 +96,7 @@ def play(model):
                 policies, 
                 state.is_first_player()])
 
-        action = np.random.choice(state.legal_actions(), p=scores)
+        action = np.random.choice(range(FIELDS_NUM*(FIELDS_NUM+1)+HANDS_NUM+1), p=scores)
 
         state = state.next(action)
     
