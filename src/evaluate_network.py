@@ -8,7 +8,7 @@ if len(physical_devices) > 0:
 else:
     print("Not enough GPU hardware devices available")
 from game import State
-from pv_mcts import pv_mcts_action
+from pv_mcts import pv_ismcts_action
 from tensorflow.keras.models import load_model
 from tensorflow.keras import backend as K
 from pathlib import Path
@@ -70,8 +70,8 @@ def evaluate_network(batch, count, total_point):
 
     model1 = load_model(MODEL_DIR/'best.h5')
 
-    next_action0 = pv_mcts_action(model0, EN_TEMPERATURE)
-    next_action1 = pv_mcts_action(model1, EN_TEMPERATURE)
+    next_action0 = pv_ismcts_action(model0, EN_TEMPERATURE)
+    next_action1 = pv_ismcts_action(model1, EN_TEMPERATURE)
     next_actions = (next_action0, next_action1)
 
     for i in range(batch):
