@@ -14,7 +14,7 @@ DN_OUTPUT_SIZE = FIELDS_NUM*(FIELDS_NUM+1)+HANDS_NUM+1
 
 def conv(filters):
     return Conv2D(filters, 3, padding='same', use_bias=False,
-        kernel_initializer='glorot_normal', kernel_regularizer=l2(0.0005))
+        kernel_initializer='glorot_uniform', kernel_regularizer=l2(0.0005))
 
 def residual_block():
     def f(x):
