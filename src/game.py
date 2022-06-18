@@ -369,6 +369,85 @@ def mcts_action(state):
         n_list.append(c.n)
     return legal_actions[argmax(n_list)]
 
+def ismcts_action(state):
+    class Node:
+        def __init__(self):
+            self.w = 0
+            self.n = 0
+            self.child_nodes = None
+        
+        def evaluate(self, state):
+            if state.is_done():
+                if state.is_lose():
+                    value = -1
+                if state.is_win():
+                    value = 1
+                else:
+                    value = 0
+                
+                self.w += value
+                self.n += 1
+                return value
+            
+            if not self.child_nodes:
+                value = playout(state)
+                
+                self.w += value
+                self.n += 1
+                
+                if self.n == 10:
+                    self.expand()
+                return value
+            
+            else:
+                action = self.next_action(state)
+                next_state = state.next(action)
+                next_state = next_state.start_turn() if next_state.is_starting_turn() else next_state
+                next_child_node = self.child_nodes[action]
+                if next_state.is_first_player() == state.is_first_player():
+                    value = next_child_node.evaluate(next_state)
+                else:
+                    value = -next_child_node.evaluate(next_state)
+
+                self.w += value
+                self.n += 1
+                return value
+            
+        def expand(self):
+            self.child_nodes = [Node() for _ in range(FIELDS_NUM*(FIELDS_NUM+1)+HANDS_NUM+1)]
+            
+        
+        def next_action(self, state):
+            legal_actions = state.legal_actions()
+            for action in legal_actions:
+                if self.child_nodes[action].n == 0:
+                    return action
+            
+            t = 0
+            for action in legal_actions:
+                t += self.child_nodes[action].n
+            ucb1_values = []
+            for action in legal_actions:
+                child_node = self.child_nodes[action]
+                child_state = state.next(action)
+                w = -child_node.w if child_state.is_first_player() != state.is_first_player() else child_node.w
+                ucb1_values.append(w/child_node.n+(2*math.log(t)/child_node.n)**0.5)
+            
+            return legal_actions[argmax(ucb1_values)]
+    
+    root_node = Node()
+    root_node.expand()
+    
+    for _ in range(1000):
+        root_node.evaluate(state)
+    
+    legal_actions = state.legal_actions()
+    n_list = []
+    for action in legal_actions:
+        c = root_node.child_nodes[action]
+        n_list.append(c.n)
+    return legal_actions[argmax(n_list)]
+
 if __name__ == '__main__':
     state = State()
     for _ in range(2):
@@ -380,7 +459,12 @@ if __name__ == '__main__':
         state = state.start_turn() if state.is_starting_turn() else state
         if state.is_done():
             break
-        state = state.next(mcts_action(state))
+        
+        if state.is_first_player:
+            state = state.next(mcts_action(state))
+        else:
+            state = state.next(ismcts_action(state))
+        
         
         print(state)
         print()
