@@ -227,6 +227,7 @@ class State:
                     isStartingTurn=self.is_starting_turn())
 
     def start_turn(self):
+        self.__isStartingTurn=False
         state = self.get_card_drawn_state()
         state = state.make_all_cards_attackable()
         return state
@@ -273,7 +274,7 @@ def random_action(state):
     return legal_actions[random.randint(0, len(legal_actions)-1)]
 
 def playout(state):
-    drawn_state = state.get_card_drawn_state() if state.is_starting_turn() else state
+    drawn_state = state.start_turn() if state.is_starting_turn() else state
     
     if drawn_state.is_win():
         return 1
