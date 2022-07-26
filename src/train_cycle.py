@@ -10,7 +10,7 @@ if __name__ == '__main__':
     for i in range(3):
         print('Train',i,'====================')
         
-        multiProcessSelfPlay(5)
+        multiProcessSelfPlay(4)
 
         train_network()
 
@@ -18,4 +18,4 @@ if __name__ == '__main__':
         update_best_player()
 
         #if update_best_player:
-        multi_process_evaluate_best_player(5)
+        multi_process_evaluate_best_player(4)
