@@ -44,7 +44,7 @@ class State:
         self.__isStartingTurn = isStartingTurn
     
     def pick_random_card(self, cards):
-        next_cards = copy.deepcopy(cards)
+        next_cards = [Card(card.attack, card.health, card.is_attackable) for card in cards]
         np.random.shuffle(next_cards)
         choiced_card = next_cards.pop()
         
