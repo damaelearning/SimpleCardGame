@@ -51,7 +51,7 @@ class State:
         return next_cards, choiced_card
     
     def add_card(self, cards, card):
-        next_cards = copy.deepcopy(cards)
+        next_cards = [Card(card.attack, card.health, card.is_attackable) for card in cards]
         next_cards.append(card)
                
         return next_cards
@@ -109,9 +109,9 @@ class State:
         return self.is_win() or self.is_lose() or self.is_draw()
     
     def next(self, action):
-        hands = copy.deepcopy(self.hands)
-        fields = copy.deepcopy(self.fields)
-        enemy_fields = copy.deepcopy(self.enemy_fields)
+        hands = [Card(card.attack, card.health, card.is_attackable) for card in self.hands]
+        fields = [Card(card.attack, card.health, card.is_attackable) for card in self.fields]
+        enemy_fields = [Card(card.attack, card.health, card.is_attackable) for card in self.enemy_fields]
         enemy_life = self.enemy_life
         #pass
         if action == FIELDS_NUM*(FIELDS_NUM+1)+HANDS_NUM:
@@ -209,7 +209,7 @@ class State:
         return self.__canPlayHand
 
     def make_all_cards_attackable(self):
-        fields = copy.deepcopy(self.fields)
+        fields = [Card(card.attack, card.health, card.is_attackable) for card in self.fields]
         for card in fields:
             card.is_attackable = True
         return State(
