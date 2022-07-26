@@ -358,8 +358,12 @@ def mcts_action(state):
             
             return self.child_nodes[argmax(ucb1_values)]
     
-    root_node = Node(state)
-    root_node.expand()
+    if len(state.legal_actions()) == 1:
+        scores = [0]*(FIELDS_NUM*(FIELDS_NUM+1)+HANDS_NUM+1)
+        scores[-1] = 1
+    else:
+        root_node = Node(state)
+        root_node.expand()
     
     for _ in range(1000):
         root_node.evaluate()
