@@ -574,12 +574,10 @@ def ismcts_action(state):
             return legal_actions[argmax(ucb1_values)]
     
     if len(state.legal_actions()) == 1:
-        scores = [0]*(FIELDS_NUM*(FIELDS_NUM+1)+HANDS_NUM+1)
-        scores[-1] = 1
-    else:
-        root_node = Node()
-        root_node.expand()
+        return FIELDS_NUM*(FIELDS_NUM+1)+HANDS_NUM
     
+    root_node = Node()
+    root_node.expand()
     for _ in range(1000):
         root_node.evaluate(state)
     
@@ -600,9 +598,9 @@ if __name__ == '__main__':
             break
         
         if state.is_first_player:
-            state = state.next(mcts_action(state))
+            state = state.next(ismcts_action(state))
         else:
-            state = state.next(mcts_action(state))
+            state = state.next(ismcts_action(state))
         
         
         print(state)
