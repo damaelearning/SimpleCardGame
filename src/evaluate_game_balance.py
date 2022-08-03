@@ -1,4 +1,4 @@
-from game_PP import State, random_action, mcts_action, ismcts_action
+from game import State, random_action, mcts_action, ismcts_action
 from pathlib import Path
 import numpy as np
 import multiprocessing
@@ -42,7 +42,7 @@ def evaluate_algorithm_of(next_actions, batch, count, total_point):
 
 def evaluate_best_player(batch, count, total_point):
 
-    next_actions = (mcts_action, mcts_action)
+    next_actions = (ismcts_action, ismcts_action)
     evaluate_algorithm_of(next_actions, batch, count, total_point)
 
 

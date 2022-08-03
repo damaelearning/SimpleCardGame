@@ -1,61 +1,80 @@
 import random
+from unittest import case
 import numpy as np
 import math
 import copy
 import sys
-from card import Card
+from card import Card, CardWithDraw
 
-FIELDS_NUM = 3
-HANDS_NUM = 5
+FIELDS_NUM = 5
+HANDS_NUM = 9
 DECK_NUM = 15
 INITIAL_LIFE = 20
+LIMIT_PP = 10
 class State:
-    def __init__(self, life = None,
-                fields=None,
-                hands=None,
+    def __init__(self,
+                life = INITIAL_LIFE,
+                max_playPoint = 0,
+                playPoint = 0,
+                fields=[],
+                hands=[],
                 deck=None,
-                enemy_life = None,
-                enemy_fields=None,
-                enemy_hands=None,
+                enemy_life = INITIAL_LIFE,
+                enemy_max_playPoint = 0,
+                enemy_playPoint = 0,
+                enemy_fields=[],
+                enemy_hands=[],
                 enemy_deck=None,
                 isFirstPlayer=True,
                 isLibraryOut=False,
-                canPlayHand=True,
                 isStartingTurn=True):
-        self.life = life if life != None else INITIAL_LIFE
-        self.enemy_life = enemy_life if enemy_life != None else INITIAL_LIFE
-        self.fields = fields if fields != None else []
-        self.enemy_fields = enemy_fields if enemy_fields != None else []
-        if deck == None:
-            self.deck = [Card(i+1, j+1) for i in range(3) for j in range(3)]
-            self.deck.extend([Card(i+1, j+1) for i in range(2) for j in range(3)])
+        self.life = life
+        self.enemy_life = enemy_life
+        self.fields = fields
+        self.enemy_fields = enemy_fields
+        if deck == None and enemy_deck == None:
+            initial_deck = [Card(1, 1, 2), Card(1, 1, 2), Card(1, 2, 1),
+                            Card(2, 2, 2),Card(2, 2, 2), Card(2, 2, 2), Card(2, 3, 1), Card(2, 1, 3),
+                            Card(3, 3, 3), Card(3, 3, 3), Card(3, 2, 4), Card(3, 4, 1),
+                            CardWithDraw(1, 1, 1), CardWithDraw(2, 1, 2), CardWithDraw(2, 2, 1), CardWithDraw(3, 2, 3), CardWithDraw(3, 2, 3)]
+            self.deck = initial_deck
+            self.enemy_deck = initial_deck
         else: 
             self.deck = deck
-        if enemy_deck == None:
-            self.enemy_deck = [Card(i+1, j+1) for i in range(3) for j in range(3)]
-            self.enemy_deck.extend([Card(i+1, j+1) for i in range(2) for j in range(3)])
-        else: 
             self.enemy_deck = enemy_deck
-        self.hands = hands if hands != None else []
-        self.enemy_hands = enemy_hands if enemy_hands != None else []
+        
+
+        self.hands = hands
+        self.enemy_hands = enemy_hands
+        self.playPoint = playPoint
+        self.max_playPoint = max_playPoint
+        self.enemy_playPoint = enemy_playPoint
+        self.enemy_max_playPoint = enemy_max_playPoint
         self.__isFirstPlayer = isFirstPlayer
         self.__isLibraryOut = isLibraryOut
-        self.__canPlayHand = canPlayHand
         self.__isStartingTurn = isStartingTurn
+        self.effect_dict = {"draw" : self.iterate_draw}
     
     def pick_random_card(self, cards):
-        next_cards = [Card(card.attack, card.health, card.is_attackable) for card in cards]
+        next_cards = [card.copy() for card in cards]
         np.random.shuffle(next_cards)
         choiced_card = next_cards.pop()
         
         return next_cards, choiced_card
     
     def add_card(self, cards, card):
-        next_cards = [Card(card.attack, card.health, card.is_attackable) for card in cards]
+        next_cards = [card.copy() for card in cards]
         next_cards.append(card)
                
         return next_cards
     
+    def iterate_draw(self, iterate_num):
+        state = self.get_card_drawn_state()
+        iterate_num -= 1
+        if iterate_num == 0 or state.is_library_out:
+            return state
+        return state.iterate_draw(iterate_num)
+
     def get_card_drawn_state(self):
         if len(self.deck) > 0:    
             next_deck, picked_card = self.pick_random_card(self.deck)
@@ -63,31 +82,36 @@ class State:
             random.shuffle(next_hands)
             state = State(
                 self.life,
+                self.max_playPoint,
+                self.playPoint,
                 self.fields,
                 next_hands,
                 next_deck,
                 self.enemy_life,
+                self.enemy_max_playPoint,
+                self.enemy_playPoint,
                 self.enemy_fields,
                 self.enemy_hands,
                 self.enemy_deck,
                 self.is_first_player(),
                 isLibraryOut=False,
-                canPlayHand=self.can_play_hand(),
-                isStartingTurn=self.is_starting_turn()
-                )
+                isStartingTurn=self.is_starting_turn())
         else:
             state = State(
                 self.life,
+                self.max_playPoint,
+                self.playPoint,
                 self.fields,
                 self.hands,
                 self.deck,
                 self.enemy_life,
+                self.enemy_max_playPoint,
+                self.enemy_playPoint,
                 self.enemy_fields,
                 self.enemy_hands,
                 self.enemy_deck,
                 self.is_first_player(),
                 isLibraryOut=True,
-                canPlayHand=self.can_play_hand(),
                 isStartingTurn=self.is_starting_turn())
         
         return state
@@ -109,43 +133,53 @@ class State:
         return self.is_win() or self.is_lose() or self.is_draw()
     
     def next(self, action):
-        hands = [Card(card.attack, card.health, card.is_attackable) for card in self.hands]
-        fields = [Card(card.attack, card.health, card.is_attackable) for card in self.fields]
-        enemy_fields = [Card(card.attack, card.health, card.is_attackable) for card in self.enemy_fields]
+        hands = [card.copy() for card in self.hands]
+        fields = [card.copy() for card in self.fields]
+        enemy_fields = [card.copy() for card in self.enemy_fields]
+
         enemy_life = self.enemy_life
         #pass
         if action == FIELDS_NUM*(FIELDS_NUM+1)+HANDS_NUM:
             return State(
                 enemy_life,
+                self.enemy_max_playPoint,
+                self.enemy_playPoint,
                 enemy_fields,
                 self.enemy_hands,
                 self.enemy_deck,
                 self.life,
+                self.max_playPoint,
+                self.playPoint,
                 fields,
                 hands,
                 self.deck,
                 not self.is_first_player(),
                 isLibraryOut=False,
-                canPlayHand=True,
                 isStartingTurn=True) 
         #play hand
         elif action >= FIELDS_NUM*(FIELDS_NUM+1):
             handId = action - FIELDS_NUM*(FIELDS_NUM+1)
             card = hands.pop(handId)
             fields.append(card)
-            return State(
+            next_playPoint = self.playPoint - card.playPoint
+            state = State(
                     self.life,
+                    self.max_playPoint,
+                    next_playPoint,
                     fields, 
                     hands,
                     self.deck,
                     enemy_life,
+                    self.enemy_max_playPoint,
+                    self.enemy_playPoint,
                     enemy_fields,
                     self.enemy_hands,
                     self.enemy_deck,
                     self.is_first_player(),
                     self.is_library_out(),
-                    canPlayHand=False,
                     isStartingTurn=False)
+            if card.has_fanfare: state = state.activate_effect(card.fanfare())
+            return state
         #battle
         else:
             attacker = action // (FIELDS_NUM+1)
@@ -167,16 +201,19 @@ class State:
             
             return State(
                     self.life,
+                    self.max_playPoint,
+                    self.playPoint,
                     fields, 
                     hands,
                     self.deck,
                     enemy_life,
+                    self.enemy_max_playPoint,
+                    self.enemy_playPoint,
                     enemy_fields,
                     self.enemy_hands,
                     self.enemy_deck,
                     self.is_first_player(),
                     self.is_library_out(),
-                    canPlayHand=self.can_play_hand(),
                     isStartingTurn=False)
     
     def legal_actions(self):
@@ -189,9 +226,10 @@ class State:
                 #attack player
                 actions.append(i*(FIELDS_NUM+1)+FIELDS_NUM)
         #hand
-        if self.can_play_hand() and len(self.fields) < FIELDS_NUM:
-            for i, _ in enumerate(self.hands):
-                actions.append(FIELDS_NUM*(FIELDS_NUM+1)+i)
+        if len(self.fields) < FIELDS_NUM:
+            for i, card in enumerate(self.hands):
+                if card.playPoint <= self.playPoint:
+                    actions.append(FIELDS_NUM*(FIELDS_NUM+1)+i)
         #pass
         actions.append(FIELDS_NUM*(FIELDS_NUM+1)+HANDS_NUM)
         return actions
@@ -205,33 +243,113 @@ class State:
     def is_starting_turn(self):
         return self.__isStartingTurn
     
-    def can_play_hand(self):
-        return self.__canPlayHand
+    def game_start(self):
+        state = self
+        for _ in range(2):
+            state = state.get_card_drawn_state()
+        state = State(
+            state.enemy_life, 
+            state.max_playPoint,
+            state.playPoint,
+            state.enemy_fields, 
+            state.enemy_hands, 
+            state.enemy_deck, 
+            state.life, 
+            state.enemy_max_playPoint,
+            state.enemy_playPoint,
+            state.fields, 
+            state.hands, 
+            state.deck, 
+            not state.is_first_player())
+    
+        for _ in range(4):
+            state = state.get_card_drawn_state()
+        state = State(
+            state.enemy_life, 
+            state.max_playPoint,
+            state.playPoint,
+            state.enemy_fields, 
+            state.enemy_hands, 
+            state.enemy_deck, 
+            state.life, 
+            state.enemy_max_playPoint,
+            state.enemy_playPoint,
+            state.fields, 
+            state.hands, 
+            state.deck, 
+            not state.is_first_player())
+        
+        return state
 
     def make_all_cards_attackable(self):
-        fields = [Card(card.attack, card.health, card.is_attackable) for card in self.fields]
+        fields = [card.copy() for card in self.fields]
         for card in fields:
             card.is_attackable = True
         return State(
                     self.life,
+                    self.max_playPoint,
+                    self.playPoint,
                     fields, 
                     self.hands,
                     self.deck,
                     self.enemy_life,
+                    self.enemy_max_playPoint,
+                    self.enemy_playPoint,
                     self.enemy_fields,
                     self.enemy_hands,
                     self.enemy_deck,
                     self.is_first_player(),
                     self.is_library_out(),
-                    canPlayHand=self.can_play_hand(),
                     isStartingTurn=self.is_starting_turn())
-
+    
+    def inclease_max_PP(self):
+        return State(
+            self.life,
+            self.max_playPoint+1,
+            self.playPoint,
+            self.fields, 
+            self.hands,
+            self.deck,
+            self.enemy_life,
+            self.enemy_max_playPoint,
+            self.enemy_playPoint,
+            self.enemy_fields,
+            self.enemy_hands,
+            self.enemy_deck,
+            self.is_first_player(),
+            self.is_library_out(),
+            isStartingTurn=self.is_starting_turn())
+    
+    def set_play_point(self, next_play_point):
+        return State(
+            self.life,
+            self.max_playPoint,
+            next_play_point,
+            self.fields, 
+            self.hands,
+            self.deck,
+            self.enemy_life,
+            self.enemy_max_playPoint,
+            self.enemy_playPoint,
+            self.enemy_fields,
+            self.enemy_hands,
+            self.enemy_deck,
+            self.is_first_player(),
+            self.is_library_out(),
+            isStartingTurn=self.is_starting_turn()
+        )
+    
     def start_turn(self):
         self.__isStartingTurn=False
         state = self.get_card_drawn_state()
         state = state.make_all_cards_attackable()
+        state = state.inclease_max_PP() if state.max_playPoint < LIMIT_PP else state
+        state = state.set_play_point(state.max_playPoint)
         return state
     
+    def activate_effect(self, effect):
+        return self.effect_dict[effect[0]](effect[1])
+
     
     def resize_zero_padding(self, input_list, size):
         return_array = np.array(input_list)
@@ -248,30 +366,49 @@ class State:
         return [float(card.is_attackable) for card in input_list]
     
     def __str__(self):
-        def getStr(firstPlayerFields, firstPlayerLife, firstPlayerHands, secondPlayerFields, secondPlayerLife, secondPlayerHands):
+        def getStr(firstPlayerFields, firstPlayerLife, firstPlayerMaxPP, firstPlayerPP, firstPlayerHands, secondPlayerFields, secondPlayerLife, secondPlayerMaxPP, secondPlayerPP, secondPlayerHands):
             def getCardsStr(cards, max_num):
                 str = ''
                 for card in cards:
-                    str += '[{0:1d}/{1:1d}] '.format(card.attack, card.health)
+                    str += '[{0:1d}:{1:1d}/{2:1d}] '.format(card.playPoint, card.attack, card.health)
                 
                 for i in range(max_num - len(cards)):
                     str += '[   ] '
                 return str
-            str = '         {0:2d}\n'.format(secondPlayerLife)
+            str = '         {0:2d}  {1:1d}/{2:1d}\n'.format(secondPlayerLife, secondPlayerPP, secondPlayerMaxPP)
             str += getCardsStr(secondPlayerHands, HANDS_NUM) + '\n'
             str += getCardsStr(secondPlayerFields, FIELDS_NUM) + '\n'
             str += getCardsStr(firstPlayerFields, FIELDS_NUM) + '\n'
             str += getCardsStr(firstPlayerHands, HANDS_NUM) + '\n'
-            str += '         {0:2d}\n'.format(firstPlayerLife)
+            str += '         {0:2d}  {1:1d}/{2:1d}\n'.format(firstPlayerLife, firstPlayerPP, firstPlayerMaxPP)
             return str
         if self.is_first_player():
-            return getStr(self.fields, self.life, self.hands, self.enemy_fields, self.enemy_life, self.enemy_hands)
+            return getStr(self.fields,
+                    self.life,
+                    self.max_playPoint,
+                    self.playPoint,
+                    self.hands,
+                    self.enemy_fields,
+                    self.enemy_life,
+                    self.enemy_max_playPoint,
+                    self.enemy_playPoint,
+                    self.enemy_hands)
         else:
-            return getStr(self.enemy_fields, self.enemy_life, self.enemy_hands, self.fields, self.life, self.hands)
+            return getStr(self.enemy_fields, 
+                    self.enemy_life,
+                    self.enemy_max_playPoint,
+                    self.enemy_playPoint, 
+                    self.enemy_hands, 
+                    self.fields, 
+                    self.life,
+                    self.max_playPoint,
+                    self.playPoint, 
+                    self.hands)
 
 def random_action(state):
     legal_actions = state.legal_actions()
     return legal_actions[random.randint(0, len(legal_actions)-1)]
+
 
 def playout(state):
     drawn_state = state.start_turn() if state.is_starting_turn() else state
@@ -359,13 +496,12 @@ def mcts_action(state):
             return self.child_nodes[argmax(ucb1_values)]
     
     if len(state.legal_actions()) == 1:
-        scores = [0]*(FIELDS_NUM*(FIELDS_NUM+1)+HANDS_NUM+1)
-        scores[-1] = 1
-    else:
-        root_node = Node(state)
-        root_node.expand()
+        return FIELDS_NUM*(FIELDS_NUM+1)+HANDS_NUM
+
+    root_node = Node(state)
+    root_node.expand()
     
-    for _ in range(1000):
+    for _ in range(10000):
         root_node.evaluate()
     
     legal_actions = state.legal_actions()
@@ -440,10 +576,12 @@ def ismcts_action(state):
             
             return legal_actions[argmax(ucb1_values)]
     
+    if len(state.legal_actions()) == 1:
+        return FIELDS_NUM*(FIELDS_NUM+1)+HANDS_NUM
+    
     root_node = Node()
     root_node.expand()
-    
-    for _ in range(1000):
+    for _ in range(10000):
         root_node.evaluate(state)
     
     legal_actions = state.legal_actions()
@@ -455,10 +593,7 @@ def ismcts_action(state):
 
 if __name__ == '__main__':
     state = State()
-    for _ in range(2):
-        for _ in range(2):
-            state = state.get_card_drawn_state()
-        state = State(state.enemy_life, state.enemy_fields, state.enemy_hands, state.enemy_deck, state.life, state.fields, state.hands, state.deck, not state.is_first_player())
+    state = state.game_start()
 
     while True:
         state = state.start_turn() if state.is_starting_turn() else state
@@ -466,7 +601,7 @@ if __name__ == '__main__':
             break
         
         if state.is_first_player:
-            state = state.next(mcts_action(state))
+            state = state.next(ismcts_action(state))
         else:
             state = state.next(ismcts_action(state))
         
