@@ -1,4 +1,4 @@
-from game import State, random_action, mcts_action, ismcts_action
+from game import State, Actor, random_action, mcts_action, ismcts_action
 from pathlib import Path
 import numpy as np
 import multiprocessing
@@ -7,24 +7,26 @@ from const import MODEL_DIR
 EP_GAME_COUNT = 100
 
 def first_player_point(ended_state):
-    if ended_state.is_lose():
-        return 0 if ended_state.is_first_player() else 1
-    if ended_state.is_win():
-        return 1 if ended_state.is_first_player() else 0
+    if ended_state.turn_owner.is_lose():
+        return 0 if ended_state.turn_owner.is_first_player else 1
+    if ended_state.enemy.is_lose():
+        return 1 if ended_state.turn_owner.is_first_player else 0
     return 0.5
 
 def play(next_actions):
-    state = State()
+    first_player = Actor(is_first_player=True)
+    second_player = Actor(is_first_player=False)
+    state = State(first_player, second_player)
     state = state.game_start()
 
     while True:
         if state.is_done():
             break;
-        state = state.start_turn() if state.is_starting_turn() else state
+        state = state.start_turn() if state.is_starting_turn else state
         if state.is_done():
             break
 
-        next_action = next_actions[0] if state.is_first_player() else next_actions[1]
+        next_action = next_actions[0] if state.turn_owner.is_first_player else next_actions[1]
         action = next_action(state)
 
         state = state.next(action)
