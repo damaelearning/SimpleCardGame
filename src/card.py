@@ -3,30 +3,56 @@ import random
 MAX_STATUS = 3
 
 class Card:
-    def __init__(self, playPoint=None, attack=None, health=None, is_attackable=None):
-        self.playPoint = playPoint
-        self.attack = attack if attack != None else random.randint(1, MAX_STATUS)
-        self.health = health if health != None else random.randint(1, MAX_STATUS)
-        self.is_attackable = is_attackable if is_attackable != None else True
-        self.has_fanfare = False
+    def __init__(self, play_point, attack, health, is_attackable=False):
+        self._play_point = play_point
+        self._attack = attack
+        self._health = health
+        self._is_attackable = is_attackable
+        self._has_fanfare = False
     
+    @property
+    def play_point(self):
+        return self._play_point
+
+    @property
+    def attack(self):
+        return self._attack
+    
+    @property
+    def health(self):
+        return self._health
+    
+    @property
+    def is_attackable(self):
+        return self._is_attackable
+
+    @property
+    def has_fanfare(self):
+        return self._has_fanfare
+
     def copy(self):
-        return Card(self.playPoint, self.attack, self.health, self.is_attackable)
+        return Card(self._play_point, self._attack, self._health, self._is_attackable)
 
     def damage(self, value):
-        self.health -= value
+        self._health -= value
+
+    def become_non_attackable(self):
+        self._is_attackable = False
+
+    def become_attackable(self):
+        self._is_attackable = True
 
     def fanfare(self):
         return None
 
 
 class CardWithDraw(Card):
-    def __init__(self, playPoint=None, attack=None, health=None, is_attackable=None):
-        super().__init__(playPoint, attack, health, is_attackable)
-        self.has_fanfare = True
+    def __init__(self, play_point, attack, health, is_attackable=False):
+        super().__init__(play_point, attack, health, is_attackable)
+        self._has_fanfare = True
 
     def copy(self):
-        return CardWithDraw(self.playPoint, self.attack, self.health, self.is_attackable)
+        return CardWithDraw(self._play_point, self._attack, self._health, self._is_attackable)
 
     def fanfare(self):
         return ["draw", 1]
