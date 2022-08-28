@@ -366,24 +366,12 @@ def random_action(state):
 def playout(state):
     if state.is_done():
         if state.turn_owner.is_lose():
-            # if state.turn_owner.is_first_player:
-            #     print("first player lose")
-            # else:
-            #     print("first player win")
             return -1
         if state.enemy.is_lose():
-            # if state.turn_owner.is_first_player:
-            #     print("first player win")
-            # else:
-            #     print("first player lose")
             return 1
 
     drawn_state = state.start_turn() if state.is_starting_turn else state
     if drawn_state.turn_owner.is_lose():
-        # if state.turn_owner.is_first_player:
-        #     print("first player lose")
-        # else:
-        #     print("first player win")
         return -1
     
     next_state = drawn_state.next(random_action(drawn_state))
@@ -574,19 +562,5 @@ if __name__ == '__main__':
         
         print(state)
         print()
-
-    # first_player = Actor(is_first_player=True)
-    # second_player = Actor(is_first_player=False)
-    # state = State(first_player, second_player)
-    # state = state.game_start()
-    # state = state.start_turn()
-    # state = state.next(FIELDS_NUM*(FIELDS_NUM+1)+HANDS_NUM)
-    # state = state.start_turn()
-    # state = state.next(FIELDS_NUM*(FIELDS_NUM+1)+HANDS_NUM)
-    # state = state.start_turn()
-    # time1 = time.time()
-    # action = ismcts_action(state)
-    # time2 = time.time()
-    # print(time2 - time1)
 
 
