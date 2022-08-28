@@ -9,6 +9,8 @@ from pathlib import Path
 import numpy as np
 import multiprocessing
 from const import MODEL_DIR
+from tensorflow.python.compiler.mlcompute import mlcompute
+import platform
 
 EP_GAME_COUNT = 100
 
@@ -81,11 +83,14 @@ def multi_process_evaluate_best_player(process_num):
     print('VS MCTS', average_point)
 
 if __name__ == '__main__':
-    #physical_devices = tf.config.list_physical_devices('GPU')
-    #if len(physical_devices) > 0:
-    #    for device in physical_devices:
-    #        tf.config.experimental.set_memory_growth(device, True)
-    #        print('{} memory growth: {}'.format(device, tf.config.experimental.get_memory_growth(device)))
-    #else:
-    #    print("Not enough GPU hardware devices available")
-    multi_process_evaluate_best_player(2)
+    if platform.system() == "Darwin":
+        mlcompute.set_mlc_device(device_name="gpu")
+    else:
+        physical_devices = tf.config.list_physical_devices('GPU')
+        if len(physical_devices) > 0:
+            for device in physical_devices:
+                tf.config.experimental.set_memory_growth(device, True)
+                print('{} memory growth: {}'.format(device, tf.config.experimental.get_memory_growth(device)))
+        else:
+            print("Not enough GPU hardware devices available")
+    multi_process_evaluate_best_player(5)

@@ -12,6 +12,8 @@ import pickle
 import os
 import multiprocessing
 from const import MODEL_DIR, HISTORY_DIR
+from tensorflow.python.compiler.mlcompute import mlcompute
+import platform
 
 SP_GAME_COUNT = 1000
 SP_TEMPERATURE = 1.0
@@ -33,7 +35,7 @@ def write_data(history):
 
 def play(model):
     history = []
-    
+
     first_player = Actor(is_first_player=True)
     second_player = Actor(is_first_player=False)
     state = State(first_player, second_player)
@@ -101,4 +103,14 @@ def multiProcessSelfPlay(process_num):
 
 
 if __name__ == '__main__':
+    if platform.system() == "Darwin":
+        mlcompute.set_mlc_device(device_name="gpu")
+    else:
+        physical_devices = tf.config.list_physical_devices('GPU')
+        if len(physical_devices) > 0:
+            for device in physical_devices:
+                tf.config.experimental.set_memory_growth(device, True)
+                print('{} memory growth: {}'.format(device, tf.config.experimental.get_memory_growth(device)))
+        else:
+            print("Not enough GPU hardware devices available")
     multiProcessSelfPlay(5)
