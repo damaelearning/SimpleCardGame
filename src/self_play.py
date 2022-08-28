@@ -24,10 +24,10 @@ SP_GAME_COUNT = 1000
 SP_TEMPERATURE = 1.0
 
 def first_player_value(ended_state):
-    if ended_state.is_lose():
-        return -1 if ended_state.is_first_player() else 1
-    if ended_state.is_win():
-        return 1 if ended_state.is_first_player() else -1
+    if ended_state.turn_owner.is_lose():
+        return -1 if ended_state.turn_owner.is_first_player else 1
+    if ended_state.enemy.is_lose():
+        return 1 if ended_state.turn_owner.is_first_player else -1
     return 0
 
 def write_data(history):
@@ -41,23 +41,10 @@ def write_data(history):
 def play(model):
     history = []
     
-    state = State()
-    for _ in range(2):
-        for _ in range(2):
-            state = state.get_card_drawn_state()
-        state = State(
-            state.enemy_life, 
-            state.enemy_fields, 
-            state.enemy_hands, 
-            state.enemy_deck, 
-            state.life, 
-            state.fields, 
-            state.hands, 
-            state.deck, 
-            not state.is_first_player(),
-            isLibraryOut=False,
-            canPlayHand=True,
-            isStartingTurn=True)
+    first_player = Actor(is_first_player=True)
+    second_player = Actor(is_first_player=False)
+    state = State(first_player, second_player)
+    state = state.game_start()
 
     a, b, _ = DN_INPUT_SHAPE
     coef = 1/INITIAL_LIFE
@@ -65,7 +52,7 @@ def play(model):
     while True:
         if state.is_done():
             break
-        state = state.start_turn() if state.is_starting_turn() else state
+        state = state.start_turn() if state.is_starting_turn else state
         if state.is_done():
             break
 

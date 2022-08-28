@@ -59,12 +59,10 @@ def pv_mcts_scores(model, state, temperature):
         
         def evaluate(self):
             if self.state.is_done():
-                if self.state.is_lose():
+                if self.state.turn_owner.is_lose():
                     value = -1
-                if self.state.is_win():
+                if self.state.enemy.is_lose():
                     value = 1
-                else:
-                    value = 0
                 
                 self.w += value
                 self.n += 1
@@ -83,7 +81,7 @@ def pv_mcts_scores(model, state, temperature):
         
             else:
                 next_child_node = self.next_child_node()
-                if next_child_node.state.is_first_player() == self.state.is_first_player():
+                if next_child_node.state.turn_owner.is_first_player == self.state.turn_owner.is_first_player:
                     value = next_child_node.evaluate()
                 else:
                     value = -next_child_node.evaluate()
@@ -97,7 +95,7 @@ def pv_mcts_scores(model, state, temperature):
             C_PUCT = log10((1+t+19652)/19652+1.25)
             pucb_values = []
             for child_node in self.child_nodes:
-                w = -child_node.w if child_node.state.is_first_player() != self.state.is_first_player() else child_node.w
+                w = -child_node.w if child_node.state.turn_owner.is_first_player != self.state.turn_owner.is_first_player else child_node.w
                 pucb_values.append((w / child_node.n if child_node.n else 0.0) +
                     C_PUCT * child_node.p * sqrt(t) / (1 + child_node.n))
             
@@ -132,12 +130,10 @@ def pv_ismcts_scores(model, state, temperature):
         
         def evaluate(self, state):
             if state.is_done():
-                if state.is_lose():
+                if state.turn_owner.is_lose():
                     value = -1
-                if state.is_win():
+                if state.enemy.is_lose():
                     value = 1
-                else:
-                    value = 0
                 
                 self.w += value
                 self.n += 1
@@ -155,9 +151,9 @@ def pv_ismcts_scores(model, state, temperature):
             else:
                 action = self.next_action(state)
                 next_state = state.next(action)
-                next_state = next_state.start_turn() if next_state.is_starting_turn() else next_state
+                next_state = next_state.start_turn() if next_state.is_starting_turn else next_state
                 next_child_node = self.child_nodes[action]
-                if next_state.is_first_player() == state.is_first_player():
+                if next_state.turn_owner.is_first_player == state.turn_owner.is_first_player:
                     value = next_child_node.evaluate(next_state)
                 else:
                     value = -next_child_node.evaluate(next_state)
@@ -177,7 +173,7 @@ def pv_ismcts_scores(model, state, temperature):
             for action, policy in zip(legal_actions, policies):
                 child_node = self.child_nodes[action]
                 child_state = state.next(action)
-                w = -child_node.w if child_state.is_first_player() != state.is_first_player() else child_node.w
+                w = -child_node.w if child_state.turn_owner.is_first_player != state.turn_owner.is_first_player else child_node.w
                 pucb_values.append((w / child_node.n if child_node.n else 0.0) +
                     C_PUCT * policy * sqrt(t) / (1 + child_node.n))
             
@@ -224,30 +220,18 @@ if __name__ == '__main__':
     path = sorted(Path(MODEL_DIR).glob('best.h5'))[-1]
     model = load_model(str(path))
     
-    state = State()
-    for _ in range(2):
-        for _ in range(2):
-            state = state.get_card_drawn_state()
-        state = State(
-            state.enemy_life, 
-            state.enemy_fields, 
-            state.enemy_hands, 
-            state.enemy_deck, 
-            state.life, 
-            state.fields, 
-            state.hands, 
-            state.deck, 
-            not state.is_first_player(),
-            isLibraryOut=False,
-            canPlayHand=True,
-            isStartingTurn=True)
+
+    first_player = Actor(is_first_player=True)
+    second_player = Actor(is_first_player=False)
+    state = State(first_player, second_player)
+    state = state.game_start()
     
     next_action = pv_ismcts_action(model, 1.0)
 
     while True:
         if state.is_done():
             break;
-        state = state.start_turn() if state.is_starting_turn() else state
+        state = state.start_turn() if state.is_starting_turn else state
         if state.is_done():
             break
         
