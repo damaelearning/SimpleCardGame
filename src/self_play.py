@@ -1,14 +1,7 @@
 import tensorflow as tf
-physical_devices = tf.config.list_physical_devices('GPU')
-if len(physical_devices) > 0:
-    for device in physical_devices:
-        tf.config.experimental.set_memory_growth(device, True)
-        print('{} memory growth: {}'.format(device, tf.config.experimental.get_memory_growth(device)))
-else:
-    print("Not enough GPU hardware devices available")
 import time
-from game import INITIAL_LIFE, State, FIELDS_NUM, HANDS_NUM
-from pv_mcts import pv_ismcts_scores
+from game import INITIAL_LIFE, State, Actor, FIELDS_NUM, HANDS_NUM
+from pv_mcts import pv_ismcts_scores, convert_state_to_input
 from dual_network import DN_OUTPUT_SIZE, DN_INPUT_SHAPE
 from datetime import datetime
 from tensorflow.keras.models import load_model
@@ -62,26 +55,9 @@ def play(model):
         for action, policy in zip(range(FIELDS_NUM*(FIELDS_NUM+1)+HANDS_NUM+1), scores):
             policies[action] = policy
         
-        x = [state.resize_zero_padding(state.get_attack_list(state.fields), b) * coef,
-        state.resize_zero_padding(state.get_health_list(state.fields), b) * coef, 
-        state.resize_zero_padding(state.get_attack_list(state.hands), b) * coef,
-        state.resize_zero_padding(state.get_health_list(state.hands), b) * coef,
-        state.resize_zero_padding(state.get_attack_list(state.deck), b) * coef,
-        state.resize_zero_padding(state.get_health_list(state.deck), b) * coef,
-        state.resize_zero_padding(state.get_health_list(state.enemy_deck), b) * coef,
-        state.resize_zero_padding(state.get_attack_list(state.enemy_deck), b) * coef,
-        state.resize_zero_padding(state.get_health_list(state.enemy_hands), b) * coef,
-        state.resize_zero_padding(state.get_attack_list(state.enemy_hands), b) * coef,
-        state.resize_zero_padding(state.get_health_list(state.enemy_fields), b) * coef,  
-        state.resize_zero_padding(state.get_attack_list(state.enemy_fields), b) * coef]
+        input = convert_state_to_input(state, height, width, channel)
 
-        history.append([[x,
-                [[state.life * coef for _ in range(b)] for _ in range(a)],
-                [[state.enemy_life * coef for _ in range(b)] for _ in range(a)],
-                [state.resize_zero_padding(state.get_attackable_list(state.fields), b) for _ in range(a)],
-                [[float(state.can_play_hand()) for _ in range(b)] for _ in range(a)]], 
-                policies, 
-                state.is_first_player()])
+        history.append([input, policies, state.turn_owner.is_first_player])
 
         action = np.random.choice(range(FIELDS_NUM*(FIELDS_NUM+1)+HANDS_NUM+1), p=scores)
 

@@ -1,6 +1,6 @@
-from game import DECK_NUM, State, FIELDS_NUM, INITIAL_LIFE, HANDS_NUM
+from game import DECK_NUM, State, Actor, FIELDS_NUM, INITIAL_LIFE, HANDS_NUM
 from dual_network import DN_INPUT_SHAPE
-from math import sqrt, log10
+from math import sqrt, log10, ceil
 from tensorflow.keras.models import load_model
 from pathlib import Path
 import numpy as np
@@ -12,35 +12,72 @@ from const import MODEL_DIR
 PV_EVALUATE_COUNT = 200
 
 def predict(model, state):
-    a, b, c = DN_INPUT_SHAPE
-    coef = 1/INITIAL_LIFE
-    x = [state.resize_zero_padding(state.get_attack_list(state.fields), b) * coef,
-        state.resize_zero_padding(state.get_health_list(state.fields), b) * coef,  
-        state.resize_zero_padding(state.get_attack_list(state.hands), b) * coef,
-        state.resize_zero_padding(state.get_health_list(state.hands), b) * coef,
-        state.resize_zero_padding(state.get_attack_list(state.deck), b) * coef,
-        state.resize_zero_padding(state.get_health_list(state.deck), b) * coef,
-        state.resize_zero_padding(state.get_health_list(state.enemy_deck), b) * coef,
-        state.resize_zero_padding(state.get_attack_list(state.enemy_deck), b) * coef,
-        state.resize_zero_padding(state.get_health_list(state.enemy_hands), b) * coef,
-        state.resize_zero_padding(state.get_attack_list(state.enemy_hands), b) * coef,
-        state.resize_zero_padding(state.get_health_list(state.enemy_fields), b) * coef, 
-        state.resize_zero_padding(state.get_attack_list(state.enemy_fields), b) * coef]
+    input = convert_state_to_input(state, height, width, channel)
 
-    x = np.array([
-            x,
-            [[state.life * coef for _ in range(b)] for _ in range(a)],
-            [[state.enemy_life * coef for _ in range(b)] for _ in range(a)],
-            [state.resize_zero_padding(state.get_attackable_list(state.fields), b) for _ in range(a)],
-            [[float(state.can_play_hand()) for _ in range(b)] for _ in range(a)]])
-    x = x.transpose(1, 2, 0)
-    x = x.reshape(1, a, b, c)
-    y = model.predict_on_batch(x)
-    policies = y[0][0][list(state.legal_actions())]
+    input = input.transpose(1, 2, 0)
+    input = input.reshape(1, height, width, channel)
+    output = model.predict_on_batch(input)
+    policies = output[0][0][list(state.legal_actions())]
     policies /= sum(policies) if sum(policies) else 1
     
-    value = y[1][0][0]
+    value = output[1][0][0]
     return policies, value
+
+#To convert card parameters to channel
+def convert_state_to_input(state, height, width, channel):
+    turn_owner = state.turn_owner
+    enemy = state.enemy
+    h_hands = ceil(HANDS_NUM/width)
+    h_deck = ceil(DECK_NUM/width)
+    coef = 1/INITIAL_LIFE
+    sizes = [width, (h_hands, width), (h_deck, width)]
+    funcs = [get_attack_list, get_health_list, get_play_point_list, get_card_type_list]
+    #for turn owner
+    input=[]
+    cards_list = [turn_owner.fields, turn_owner.hands, turn_owner.deck]
+    for func in funcs:
+        input.append(get_card_para_channel(func, cards_list, sizes))
+    input.append(get_player_para_channel(turn_owner, width))
+    #for enemy
+    cards_list = [enemy.fields, enemy.hands, enemy.deck]
+    for func in funcs:
+        input.append(get_card_para_channel(func, cards_list, sizes))
+    input.append(get_player_para_channel(enemy, width))
+    input = np.stack(input)
+    return input/coef
+
+
+def get_card_para_channel(get_para_func, cards_list, sizes):
+    channel = [resize_zero_padding(get_para_func(cards), size) 
+        for cards, size in zip(cards_list, sizes)]
+    return np.vstack(channel)
+
+def get_player_para_channel(player, width):
+    channel = [resize_zero_padding(get_attackable_list(player.fields), width)]
+    channel.extend([np.full((width), player.life) for _ in range(2)])
+    channel.extend([np.full((width), player.max_play_point) for _ in range(2)])
+    channel.extend([np.full((width), player.play_point) for _ in range(2)])
+    return np.vstack(channel)
+
+def resize_zero_padding(input_list, size):
+    return_array = np.array(input_list)
+    return_array.resize(size, refcheck=False)
+    return return_array
+
+def get_card_type_list(input_list):
+    return [int(card.has_fanfare) for card in input_list]
+
+def get_play_point_list(input_list):
+    return [card.play_point for card in input_list]
+
+def get_attack_list(input_list):
+    return [card.attack for card in input_list]
+
+def get_health_list(input_list):
+    return [card.health for card in input_list]
+
+def get_attackable_list(input_list):
+    return [int(card.is_attackable) for card in input_list]
 
 def nodes_to_scores(nodes):
     scores = []

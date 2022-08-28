@@ -125,20 +125,6 @@ class State:
 
         return State(turn_owner, self.__enemy)
     
-    #To get Game State for ML
-    def resize_zero_padding(self, input_list, size):
-        return_array = np.array(input_list)
-        return_array.resize(size, refcheck=False)
-        return return_array
-    
-    def get_attack_list(self, input_list):
-        return [card.attack for card in input_list]
-
-    def get_health_list(self, input_list):
-        return [card.health for card in input_list]
-
-    def get_attackable_list(self, input_list):
-        return [float(card.is_attackable) for card in input_list]
     
     #to display Game State
     def __str__(self):
