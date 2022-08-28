@@ -12,6 +12,7 @@ from const import MODEL_DIR
 PV_EVALUATE_COUNT = 200
 
 def predict(model, state):
+    height, width, channel = DN_INPUT_SHAPE
     input = convert_state_to_input(state, height, width, channel)
 
     input = input.transpose(1, 2, 0)

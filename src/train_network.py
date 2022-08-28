@@ -27,10 +27,10 @@ def train_network():
     history = load_data()
     xs, y_policies, y_values = zip(*history)
 
-    a, b, c = DN_INPUT_SHAPE
+    height, width, channel = DN_INPUT_SHAPE
     xs = np.array(xs)
     xs = xs.transpose(0, 2, 3, 1)
-    xs = xs.reshape(len(xs), a, b, c)   
+    xs = xs.reshape(len(xs), height, width, channel)   
     y_policies = np.array(y_policies)
     y_values = np.array(y_values)
 

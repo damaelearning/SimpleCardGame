@@ -39,7 +39,7 @@ def play(model):
     state = State(first_player, second_player)
     state = state.game_start()
 
-    a, b, _ = DN_INPUT_SHAPE
+    height, width, channel = DN_INPUT_SHAPE
     coef = 1/INITIAL_LIFE
 
     while True:

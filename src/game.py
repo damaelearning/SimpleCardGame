@@ -12,7 +12,6 @@ import time
 
 FIELDS_NUM = 5
 HANDS_NUM = 9
-DECK_NUM = 15
 INITIAL_LIFE = 20
 LIMIT_PP = 10
 TOTAL_ACTION = FIELDS_NUM*(FIELDS_NUM+1)+HANDS_NUM+1
@@ -21,6 +20,8 @@ INITIAL_DECK = [Card(1, 1, 2), Card(1, 1, 2), Card(1, 1, 2),
                 Card(2, 2, 2),Card(2, 2, 2), Card(2, 2, 2), Card(2, 3, 1), Card(2, 1, 3),
                 Card(3, 2, 3), Card(3, 2, 3), Card(3, 2, 4), Card(3, 4, 1),
                 CardWithDraw(1, 1, 1), CardWithDraw(2, 1, 2), CardWithDraw(2, 2, 1), CardWithDraw(3, 2, 3), CardWithDraw(3, 2, 3)]
+DECK_NUM = len(INITIAL_DECK)
+
 class State:
     def __init__(self, turn_owner, enemy, is_starting_turn=False):
         self.__turn_owner = turn_owner
@@ -124,7 +125,7 @@ class State:
             turn_owner = turn_owner.draw_card()
 
         return State(turn_owner, self.__enemy)
-    
+
     
     #to display Game State
     def __str__(self):
