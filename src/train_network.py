@@ -1,11 +1,4 @@
 import tensorflow as tf
-physical_devices = tf.config.list_physical_devices('GPU')
-if len(physical_devices) > 0:
-    for device in physical_devices:
-        tf.config.experimental.set_memory_growth(device, True)
-        print('{} memory growth: {}'.format(device, tf.config.experimental.get_memory_growth(device)))
-else:
-    print("Not enough GPU hardware devices available")
 from game import INITIAL_LIFE
 from dual_network import DN_INPUT_SHAPE
 from tensorflow.keras.callbacks import LearningRateScheduler, LambdaCallback
@@ -15,6 +8,7 @@ from pathlib import Path
 import numpy as np
 import pickle
 from const import HISTORY_DIR, MODEL_DIR
+import platform
 
 RN_EPOCHS = 100
 
@@ -24,6 +18,17 @@ def load_data():
         return pickle.load(f)
 
 def train_network():
+    if platform.system() == "Darwin":
+        from tensorflow.python.compiler.mlcompute import mlcompute
+        mlcompute.set_mlc_device(device_name="gpu")
+    else:
+        physical_devices = tf.config.list_physical_devices('GPU')
+        if len(physical_devices) > 0:
+            for device in physical_devices:
+                tf.config.experimental.set_memory_growth(device, True)
+                print('{} memory growth: {}'.format(device, tf.config.experimental.get_memory_growth(device)))
+        else:
+            print("Not enough GPU hardware devices available")
     history = load_data()
     xs, y_policies, y_values = zip(*history)
 

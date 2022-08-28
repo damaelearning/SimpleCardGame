@@ -8,8 +8,20 @@ import tensorflow as tf
 import copy
 import time
 from const import MODEL_DIR
-from tensorflow.python.compiler.mlcompute import mlcompute
+
+# enable toe use GPU and limit memory
 import platform
+if platform.system() == "Darwin":
+    from tensorflow.python.compiler.mlcompute import mlcompute
+    mlcompute.set_mlc_device(device_name="gpu")
+else:
+    physical_devices = tf.config.list_physical_devices('GPU')
+    if len(physical_devices) > 0:
+        for device in physical_devices:
+            tf.config.experimental.set_memory_growth(device, True)
+            print('{} memory growth: {}'.format(device, tf.config.experimental.get_memory_growth(device)))
+    else:
+        print("Not enough GPU hardware devices available")
 
 PV_EVALUATE_COUNT = 10
 
@@ -251,16 +263,6 @@ def boltzman(xs, temperature):
     return [x / sum(xs) for x in xs]
 
 if __name__ == '__main__':
-    if platform.system() == "Darwin":
-        mlcompute.set_mlc_device(device_name="gpu")
-    else:
-        physical_devices = tf.config.list_physical_devices('GPU')
-        if len(physical_devices) > 0:
-            for device in physical_devices:
-                tf.config.experimental.set_memory_growth(device, True)
-                print('{} memory growth: {}'.format(device, tf.config.experimental.get_memory_growth(device)))
-        else:
-            print("Not enough GPU hardware devices available")
     path = sorted(Path(MODEL_DIR).glob('best.h5'))[-1]
     model = load_model(str(path))
     

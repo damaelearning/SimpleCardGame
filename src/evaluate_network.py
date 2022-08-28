@@ -1,12 +1,5 @@
 import tensorflow as tf
 from const import MODEL_DIR
-physical_devices = tf.config.list_physical_devices('GPU')
-if len(physical_devices) > 0:
-    for device in physical_devices:
-        tf.config.experimental.set_memory_growth(device, True)
-        print('{} memory growth: {}'.format(device, tf.config.experimental.get_memory_growth(device)))
-else:
-    print("Not enough GPU hardware devices available")
 from game import State
 from pv_mcts import pv_ismcts_action
 from tensorflow.keras.models import load_model
@@ -16,6 +9,7 @@ from shutil import copy
 import numpy as np
 import multiprocessing
 from const import MODEL_DIR
+import platform
 
 
 EN_GAME_COUNT = 100
