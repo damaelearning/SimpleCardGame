@@ -403,7 +403,7 @@ def mcts_action(state):
             
             else:
                 next_child_node = self.next_child_node()
-                if next_child_node.state.turn_owner.is_first_player == self.state.turnowner.is_first_player:
+                if next_child_node.state.turn_owner.is_first_player == self.state.turn_owner.is_first_player:
                     value = next_child_node.evaluate()
                 else:
                     value = -next_child_node.evaluate()
