@@ -49,7 +49,7 @@ def train_network():
         on_epoch_begin=lambda epoch,logs:
                 print('\rTrain {}/{}'.format(epoch + 1,RN_EPOCHS), end=''))
     
-    model.fit(xs, [y_policies, y_values], batch_size=128, epochs=RN_EPOCHS,
+    model.fit(xs, [y_policies, y_values], batch_size=256, epochs=RN_EPOCHS,
             verbose=0, callbacks=[lr_decay, print_callback])
     print('')
 
