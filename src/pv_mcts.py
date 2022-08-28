@@ -1,4 +1,4 @@
-from game import DECK_NUM, State, Actor, FIELDS_NUM, INITIAL_LIFE, HANDS_NUM
+from game import DECK_NUM, TOTAL_ACTION, State, Actor, FIELDS_NUM, INITIAL_LIFE, HANDS_NUM
 from dual_network import DN_INPUT_SHAPE
 from math import sqrt, log10, ceil
 from tensorflow.keras.models import load_model
@@ -39,7 +39,7 @@ def predict(model, state):
     value = output[1][0][0]
     return policies, value
 
-#To convert card parameters to channel
+# To convert card parameters to channel ##################################
 def convert_state_to_input(state, height, width, channel):
     turn_owner = state.turn_owner
     enemy = state.enemy
@@ -100,8 +100,9 @@ def nodes_to_scores(nodes):
     for c in nodes:
         scores.append(c.n)
     return scores
-    
-def pv_mcts_scores(model, state, temperature):
+
+# Search algolithms ##########################################################
+def pv_mcts(model, state, temperature):
     class node:
         def __init__(self, state, p):
             self.state = state
@@ -156,25 +157,32 @@ def pv_mcts_scores(model, state, temperature):
             
     root_node = node(state, 0)
     
-    for _ in range(PV_EVALUATE_COUNT):
-        root_node.evaluate()
-    
-    scores = nodes_to_scores(root_node.child_nodes)
-    if temperature == 0:
-        action = np.argmax(scores)
-        scores = np.zeros(len(scores))
-        scores[action] = 1
+    if len(state.legal_actions()) == 1:
+        policy = [0]*(TOTAL_ACTION)
+        policy[-1] = 1
     else:
-        scores = boltzman(scores, temperature)
-    return scores
+        for _ in range(PV_EVALUATE_COUNT):
+            root_node.evaluate()
+        scores = nodes_to_scores(root_node.child_nodes)
+        policy = [0] * TOTAL_ACTION
+        for action, score in zip(state.legal_actions(), scores):
+            policy[action] = score
+    
+    if temperature == 0:
+        action = np.argmax(policy)
+        policy = np.zeros(TOTAL_ACTION)
+        policy[action] = 1
+    else:
+        policy = boltzman(policy, temperature)
+    return policy
 
-def pv_mcts_action(model, temperature=0):
-    def pv_mcts_action(state):
-        scores = pv_mcts_scores(model, state, temperature)
-        return np.random.choice(state.legal_actions(), p=scores)
-    return pv_mcts_action
+def next_action_by(search, model, temperature=0):
+    def next_action(state):
+        policy = search(model, state, temperature)
+        return np.random.choice(range(TOTAL_ACTION), p=policy), policy
+    return next_action
 
-def pv_ismcts_scores(model, state, temperature):
+def pv_ismcts(model, state, temperature):
     class node:
         def __init__(self):
             self.w = 0
@@ -233,7 +241,7 @@ def pv_ismcts_scores(model, state, temperature):
             return legal_actions[np.argmax(pucb_values)]
     
     if len(state.legal_actions()) == 1:
-        scores = [0]*(FIELDS_NUM*(FIELDS_NUM+1)+HANDS_NUM+1)
+        scores = [0]*(TOTAL_ACTION)
         scores[-1] = 1
     else:
         root_node = node()
@@ -241,22 +249,14 @@ def pv_ismcts_scores(model, state, temperature):
             root_node.evaluate(state)
         scores = nodes_to_scores(root_node.child_nodes)
         
-    
-
     if temperature == 0:
         action = np.argmax(scores)
-        scores = np.zeros(len(scores))
-        scores[action] = 1
+        policy = np.zeros(len(scores))
+        policy[action] = 1
     else:
-        scores = boltzman(scores, temperature)
+        policy = boltzman(scores, temperature)
     
-    return scores
-
-def pv_ismcts_action(model, temperature=0):
-    def pv_ismcts_action(state):
-        scores = pv_ismcts_scores(model, state, temperature)
-        return np.random.choice(range(FIELDS_NUM*(FIELDS_NUM+1)+HANDS_NUM+1), p=scores)
-    return pv_ismcts_action
+    return policy
 
 def boltzman(xs, temperature):
     xs = [x ** (1/ temperature) for x in xs]
@@ -272,7 +272,7 @@ if __name__ == '__main__':
     state = State(first_player, second_player)
     state = state.game_start()
     
-    next_action = pv_ismcts_action(model, 1.0)
+    next_action = next_action_by(pv_ismcts, model, 1.0)
 
     while True:
         if state.is_done():
