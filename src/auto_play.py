@@ -1,5 +1,4 @@
 from faulthandler import cancel_dump_traceback_later
-import imp
 import tensorflow as tf
 import time
 from game import INITIAL_LIFE, State, Actor, FIELDS_NUM, HANDS_NUM
@@ -107,7 +106,7 @@ class AutoPlay:
                     historys.extend(history)
 
                     count += 1
-                    print('\r{}} {}/{}'.format(label, count, game_count), end='')
+                    print('\r{} {}/{}'.format(label, count, game_count), end='')
             except KeyboardInterrupt:
                 for future in results:
                     future.cancel()

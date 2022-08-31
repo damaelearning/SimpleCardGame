@@ -30,13 +30,8 @@ class Card:
     def has_fanfare(self):
         return self._has_fanfare
 
-    @classmethod
-    def get_self_class(Class):
-        return Class
-
     def copy(self):
-        Class = self.get_self_class()
-        return Class(self._play_point, self._attack, self._health, self._is_attackable)
+        return self.__class__(self._play_point, self._attack, self._health, self._is_attackable)
 
     def damage(self, value):
         self._health -= value
