@@ -30,8 +30,13 @@ class Card:
     def has_fanfare(self):
         return self._has_fanfare
 
+    @classmethod
+    def get_self_class(Class):
+        return Class
+
     def copy(self):
-        return Card(self._play_point, self._attack, self._health, self._is_attackable)
+        Class = self.get_self_class()
+        return Class(self._play_point, self._attack, self._health, self._is_attackable)
 
     def damage(self, value):
         self._health -= value
@@ -51,8 +56,10 @@ class CardWithDraw(Card):
         super().__init__(play_point, attack, health, is_attackable)
         self._has_fanfare = True
 
-    def copy(self):
-        return CardWithDraw(self._play_point, self._attack, self._health, self._is_attackable)
-
     def fanfare(self):
         return ["draw", 1]
+
+class CardHasStorm(Card):
+    def __init__(self, play_point, attack, health, is_attackable=True):
+        super().__init__(play_point, attack, health, is_attackable)
+
