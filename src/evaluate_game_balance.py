@@ -1,4 +1,5 @@
-from game import State, Actor, random_action, mcts_action, ismcts_action
+from game import State, Actor
+from search import random_action, mcts_action, ismcts_action
 from pathlib import Path
 import numpy as np
 import multiprocessing
@@ -27,7 +28,7 @@ def play(next_actions):
             break
 
         next_action = next_actions[0] if state.turn_owner.is_first_player else next_actions[1]
-        action = next_action(state)
+        action, _ = next_action(state)
 
         state = state.next(action)
     

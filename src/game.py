@@ -360,9 +360,11 @@ if __name__ == '__main__':
             break
         
         if state.turn_owner.is_first_player:
-            state = state.next(mcts_action(state))
+            action, _ = ismcts_action(state)
+            state = state.next(action)
         else:
-            state = state.next(mcts_action(state))
+            action, _ = ismcts_action(state)
+            state = state.next(action)
         
         
         print(state)
