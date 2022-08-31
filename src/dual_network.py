@@ -50,6 +50,7 @@ def dual_network():
     v = Activation('tanh', name='v')(v)
     
     model = Model(inputs=input, outputs=[p,v])
+    model.compile(loss=['categorical_crossentropy', 'mse'], optimizer='SGD')
     
     os.makedirs(MODEL_DIR, exist_ok=True)
     model.save(MODEL_DIR/'best.h5')

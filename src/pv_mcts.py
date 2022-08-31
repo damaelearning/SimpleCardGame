@@ -60,7 +60,7 @@ def convert_state_to_input(state, height, width, channel):
         input.append(get_card_para_channel(func, cards_list, sizes))
     input.append(get_player_para_channel(enemy, width))
     input = np.stack(input)
-    return input/coef
+    return input*coef
 
 
 def get_card_para_channel(get_para_func, cards_list, sizes):
