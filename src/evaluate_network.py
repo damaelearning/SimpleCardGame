@@ -55,10 +55,6 @@ def play(next_actions):
     
     return first_player_point(state)
 
-def update_best_player():
-    copy(MODEL_DIR/'latest.h5', MODEL_DIR/'best.h5')
-    print('Change BestPlayer')
-
 def evaluate_network(batch, count, total_point):
     model0 = load_model(MODEL_DIR/'latest.h5')
 

@@ -9,6 +9,7 @@ import numpy as np
 import pickle
 from const import HISTORY_DIR, MODEL_DIR
 import platform
+import copy
 
 RN_EPOCHS = 100
 
@@ -16,6 +17,10 @@ def load_data():
     history_path = sorted(Path(HISTORY_DIR).glob('*.history'))[-1]
     with history_path.open(mode='rb') as f:
         return pickle.load(f)
+
+def update_best_player():
+    copy(MODEL_DIR/'latest.h5', MODEL_DIR/'best.h5')
+    print('Change BestPlayer')
 
 def train_network():
     if platform.system() == "Darwin":
