@@ -95,27 +95,28 @@ def get_health_list(input_list):
 def get_attackable_list(input_list):
     return [int(card.is_attackable) for card in input_list]
 
-def nodes_to_scores(nodes):
-    scores = []
-    for c in nodes:
-        scores.append(c.n)
-    return scores
 
-# Search algolithms ##########################################################
-def pv_mcts(model, state, temperature):
-    class node:
-        def __init__(self, state, p):
+class Node:
+    def __init__(self, state=None, p=0, is_certain_node=True):
+        if is_certain_node:
+            if not state: 
+                print("Certeain node class need arg 'state'.")
+                sys.exit()
+            self.set_as_certain_node()
+        else:
+            self.set_as_uncertain_node()
+        
             self.state = state
             self.p = p
             self.w = 0
             self.n = 0
             self.child_nodes = None
         
-        def evaluate(self):
-            if self.state.is_done():
-                if self.state.turn_owner.is_lose():
+    def evaluate(self, model, state):
+        if state.is_done():
+            if state.turn_owner.is_lose():
                     value = -1
-                if self.state.enemy.is_lose():
+            if state.enemy.is_lose():
                     value = 1
                 
                 self.w += value
@@ -123,29 +124,34 @@ def pv_mcts(model, state, temperature):
                 return value
             
             if not self.child_nodes:
-                policies, value = predict(model, self.state)
+            policies, value = predict(model, state)
                 
                 self.w += value
                 self.n += 1
                 
-                self.child_nodes = []
-                for action, policy in zip(self.state.legal_actions(), policies):
-                    self.child_nodes.append(node(self.state.next(action), policy))
+            self.expand_node_func(state, policies)
                 return value
         
             else:
-                next_child_node = self.next_child_node()
-                if next_child_node.state.turn_owner.is_first_player == self.state.turn_owner.is_first_player:
-                    value = next_child_node.evaluate()
+            next_child_node, next_state = self.select_node_func(state)
+
+            if next_state.turn_owner.is_first_player == state.turn_owner.is_first_player:
+                value = next_child_node.evaluate(model, next_state)
                 else:
-                    value = -next_child_node.evaluate()
+                value = -next_child_node.evaluate(model, next_state)
                 
                 self.w += value
                 self.n += 1
                 return value
                 
-        def next_child_node(self):
-            t = sum(nodes_to_scores(self.child_nodes))
+    def nodes_to_scores(self):
+        scores = []
+        for c in self.child_nodes:
+            scores.append(c.n)
+        return scores
+            
+    def select_certain_node(self, _):
+        t = sum(self.nodes_to_scores())
             C_PUCT = log10((1+t+19652)/19652+1.25)
             pucb_values = []
             for child_node in self.child_nodes:
@@ -153,9 +159,46 @@ def pv_mcts(model, state, temperature):
                 pucb_values.append((w / child_node.n if child_node.n else 0.0) +
                     C_PUCT * child_node.p * sqrt(t) / (1 + child_node.n))
             
-            return self.child_nodes[np.argmax(pucb_values)]
+        next_child_node = self.child_nodes[np.argmax(pucb_values)]
+        
+        return next_child_node, next_child_node.state
+    
+    def select_uncertain_node(self, state):
+        t = sum(self.nodes_to_scores())
+        C_PUCT = log10((1+t+19652)/19652+1.25)
+        policies, _ = predict(model, state)
+
+        legal_actions = state.legal_actions()
+
+        pucb_values = []
+        for action, policy in zip(legal_actions, policies):
+            child_node = self.child_nodes[action]
+            w = -child_node.w if action == PASS_NUM else child_node.w
+            pucb_values.append((w / child_node.n if child_node.n else 0.0) +
+                C_PUCT * policy * sqrt(t) / (1 + child_node.n))
+        
+        action = legal_actions[np.argmax(pucb_values)]
+        next_state = state.next(action)
+        next_state = next_state.start_turn() if next_state.is_starting_turn else next_state
+        return self.child_nodes[action], next_state
+        
+    def expand_certain_node(self, state, policies):
+        self.child_nodes = []
+        for action, policy in zip(state.legal_actions(), policies):
+            self.child_nodes.append(self.__class__(state.next(action), policy, True))
+
+    def expand_uncertain_node(self, state, policies):
+        # state and policies are not used. They are defined just to much interface.
+        self.child_nodes = []
+        self.child_nodes = [self.__class__(is_certain_node=False) for _ in range(FIELDS_NUM*(FIELDS_NUM+1)+HANDS_NUM+1)]
+    
+    def set_as_certain_node(self):
+        self.select_node_func = self.select_certain_node
+        self.expand_node_func = self.expand_certain_node
             
-    root_node = node(state, 0)
+    def set_as_uncertain_node(self):
+        self.select_node_func = self.select_uncertain_node
+        self.expand_node_func = self.expand_uncertain_node
     
     if len(state.legal_actions()) == 1:
         policy = [0]*(TOTAL_ACTION)
