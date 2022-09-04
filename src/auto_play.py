@@ -2,10 +2,10 @@ from faulthandler import cancel_dump_traceback_later
 import tensorflow as tf
 import time
 from game import INITIAL_LIFE, State, Actor, FIELDS_NUM, HANDS_NUM
-from pv_mcts import next_action_by, pv_mcts, pv_ismcts, convert_state_to_input
+from pv_mcts import next_action_by, pv_mcts, pv_ismcts
 from dual_network import DN_OUTPUT_SIZE, DN_INPUT_SHAPE
 from datetime import datetime
-from tensorflow.keras.models import load_model
+from model_wrapper import ModelWrapper
 from tensorflow.keras import backend as K
 from pathlib import Path
 import  numpy as np
@@ -62,7 +62,7 @@ class AutoPlay:
             action, policy = next_action(state)
 
             if logging:
-                input = convert_state_to_input(state, height, width, channel)
+                input = ModelWrapper.convert_state_to_input(state, height, width, channel)
                 history.append([input, policy, state.turn_owner.is_first_player])
 
             state = state.next(action)
@@ -82,24 +82,29 @@ class AutoPlay:
             if action == "ismcts":
                 next_actions.append(ismcts_action)
             if action == "pv_mcts": 
-                model = load_model(model_path)
+                model = ModelWrapper(model_path)
                 next_actions.append(next_action_by(search=pv_mcts, model=model, temperature=temperature))
             if action == "pv_ismcts":
-                model = load_model(model_path)
+                model = ModelWrapper(model_path)
                 next_actions.append(next_action_by(search=pv_ismcts, model=model, temperature=temperature))
         return next_actions
 
     def multi_play(self, process_num, game_count, action_names, model_paths, 
-                        temperature, logging=False, label="Completed"):
+                        temperature, logging=False, label="Completed", alt_player=True):
+        def alternate_actions(action_names, i):
+            if alt_player and i%2 == 1:
+                return reversed(action_names) 
+            return action_names
+        
         count = 0
         value = 0
         historys = []
         canceled = False
         with futures.ProcessPoolExecutor(max_workers=process_num) as executor:
             results = [executor.submit(self.__class__.play, 
-                    action_names=action_names, temperature= temperature, 
+                    action_names=alternate_actions(action_names, i), temperature= temperature, 
                     model_paths=model_paths, logging = logging) 
-                    for _ in range(game_count)]
+                    for i in range(game_count)]
             try:
                 for result in futures.as_completed(results):
                     value, history = result.result()
@@ -125,7 +130,7 @@ class AutoPlay:
         print(process_name)
         action_names = (self.action1, self.action2)
         model_paths = (self.model_path1, self.model_path2)
-        self.multi_play(process_num, game_count, action_names, model_paths, temperature, logging=True)
+        self.multi_play(process_num, game_count, action_names, model_paths, temperature, logging=True, alt_player=False)
 
     def calc_win_rate(self, process_num, game_count, temperature=0.0, 
                         process_name=None):
@@ -136,6 +141,7 @@ class AutoPlay:
         model_paths = (self.model_path1, self.model_path2)
         value = self.multi_play(process_num, game_count, action_names, model_paths, temperature)
         print("Win rate : {}".format(value/game_count))
+        return value
 
 
 def first_player_value(ended_state):
