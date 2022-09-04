@@ -1,13 +1,17 @@
-from game import DECK_NUM, TOTAL_ACTION, State, Actor, FIELDS_NUM, INITIAL_LIFE, HANDS_NUM
+from game import DECK_NUM, PASS_NUM, TOTAL_ACTION, State, Actor, FIELDS_NUM, INITIAL_LIFE, HANDS_NUM
 from dual_network import DN_INPUT_SHAPE
 from math import sqrt, log10, ceil
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
 from tensorflow.keras.models import load_model
 from pathlib import Path
 import numpy as np
 import tensorflow as tf
 import copy
 import time
+import sys
 from const import MODEL_DIR
+tf.get_logger().setLevel("ERROR")
 
 # enable toe use GPU and limit memory
 import platform
