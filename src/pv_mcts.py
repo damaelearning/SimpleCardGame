@@ -182,7 +182,7 @@ if __name__ == '__main__':
     state = State(first_player, second_player)
     state = state.game_start()
     
-    next_action = next_action_by(pv_ismcts, model, 1.0)
+    next_action = next_action_by(pv_mcts, model, 1.0)
 
     while True:
         if state.is_done():

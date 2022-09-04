@@ -94,7 +94,7 @@ def mcts_action(state):
             return self.child_nodes[argmax(ucb1_values)]
     
     if len(state.legal_actions()) == 1:
-        return FIELDS_NUM*(FIELDS_NUM+1)+HANDS_NUM
+        return FIELDS_NUM*(FIELDS_NUM+1)+HANDS_NUM, None
 
     root_node = Node(state)
     root_node.expand()
@@ -173,7 +173,7 @@ def ismcts_action(state):
             return legal_actions[argmax(ucb1_values)]
     
     if len(state.legal_actions()) == 1:
-        return PASS_NUM
+        return PASS_NUM, None
     
     root_node = Node()
     root_node.expand()

@@ -6,7 +6,7 @@ import numpy as np
 import math
 import copy
 import sys
-from card import Card, CardWithDraw
+from card import Card, CardHasStorm, CardWithDraw
 import concurrent.futures
 import time
 
@@ -16,10 +16,18 @@ INITIAL_LIFE = 20
 LIMIT_PP = 10
 TOTAL_ACTION = FIELDS_NUM*(FIELDS_NUM+1)+HANDS_NUM+1
 PASS_NUM = FIELDS_NUM*(FIELDS_NUM+1)+HANDS_NUM
-INITIAL_DECK = [Card(1, 1, 2), Card(1, 1, 2), Card(1, 1, 2),
-                Card(2, 2, 2),Card(2, 2, 2), Card(2, 2, 2), Card(2, 3, 1), Card(2, 1, 3),
-                Card(3, 2, 3), Card(3, 2, 3), Card(3, 2, 4), Card(3, 4, 1),
-                CardWithDraw(1, 1, 1), CardWithDraw(2, 1, 2), CardWithDraw(2, 2, 1), CardWithDraw(3, 2, 3), CardWithDraw(3, 2, 3)]
+INITIAL_DECK = [Card(1, 1, 2), Card(1, 2, 1),  
+                Card(2, 2, 2),Card(2, 2, 2), Card(2, 1, 3), Card(2, 3, 1),  Card(2, 3, 1),
+                Card(3, 2, 3), Card(3, 2, 3), Card(3, 3, 2), Card(3, 3, 2),  Card(3, 3, 2),
+                Card(4, 3, 4),
+                CardWithDraw(1, 1, 1), CardWithDraw(1, 1, 1), 
+                CardWithDraw(2, 1, 2), CardWithDraw(2, 1, 2), CardWithDraw(2, 2, 1), CardWithDraw(2, 2, 1), 
+                CardWithDraw(3, 2, 2), CardWithDraw(3, 2, 2), CardWithDraw(3, 3, 1), CardWithDraw(3, 3, 1), 
+                CardWithDraw(4, 3, 3),
+                CardHasStorm(1, 1, 1), 
+                CardHasStorm(2, 2, 1), CardHasStorm(2, 2, 1),
+                CardHasStorm(3, 3, 1), CardHasStorm(3, 3, 1),
+                CardHasStorm(4, 5, 1)]
 DECK_NUM = len(INITIAL_DECK)
 
 class State:
@@ -360,9 +368,11 @@ if __name__ == '__main__':
             break
         
         if state.turn_owner.is_first_player:
-            state = state.next(mcts_action(state))
+            action, _ = ismcts_action(state)
+            state = state.next(action)
         else:
-            state = state.next(mcts_action(state))
+            action, _ = ismcts_action(state)
+            state = state.next(action)
         
         
         print(state)
