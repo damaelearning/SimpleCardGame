@@ -204,13 +204,23 @@ class Node:
         self.select_node_func = self.select_uncertain_node
         self.expand_node_func = self.expand_uncertain_node
     
+# Search algolithms ##########################################################
+def next_action_by(search, model, temperature=0):
+    def next_action(state):
+        policy = search(model, state, temperature)
+        return np.random.choice(range(TOTAL_ACTION), p=policy), policy
+    return next_action
+    
+def pv_mcts(model, state, temperature):
     if len(state.legal_actions()) == 1:
         policy = [0]*(TOTAL_ACTION)
         policy[-1] = 1
     else:
+        root_node = Node(state, 0)
+        root_node.set_as_certain_node()
         for _ in range(PV_EVALUATE_COUNT):
-            root_node.evaluate()
-        scores = nodes_to_scores(root_node.child_nodes)
+            root_node.evaluate(model, state)
+        scores = root_node.nodes_to_scores()
         policy = [0] * TOTAL_ACTION
         for action, score in zip(state.legal_actions(), scores):
             policy[action] = score
@@ -223,78 +233,16 @@ class Node:
         policy = boltzman(policy, temperature)
     return policy
 
-def next_action_by(search, model, temperature=0):
-    def next_action(state):
-        policy = search(model, state, temperature)
-        return np.random.choice(range(TOTAL_ACTION), p=policy), policy
-    return next_action
 
 def pv_ismcts(model, state, temperature):
-    class node:
-        def __init__(self):
-            self.w = 0
-            self.n = 0
-            self.child_nodes = None
-        
-        def evaluate(self, state):
-            if state.is_done():
-                if state.turn_owner.is_lose():
-                    value = -1
-                if state.enemy.is_lose():
-                    value = 1
-                
-                self.w += value
-                self.n += 1
-                return value
-            
-            if not self.child_nodes:
-                _, value = predict(model, state)
-                
-                self.w += value
-                self.n += 1
-                
-                self.child_nodes = [node() for _ in range(FIELDS_NUM*(FIELDS_NUM+1)+HANDS_NUM+1)]
-                return value
-        
-            else:
-                action = self.next_action(state)
-                next_state = state.next(action)
-                next_state = next_state.start_turn() if next_state.is_starting_turn else next_state
-                next_child_node = self.child_nodes[action]
-                if next_state.turn_owner.is_first_player == state.turn_owner.is_first_player:
-                    value = next_child_node.evaluate(next_state)
-                else:
-                    value = -next_child_node.evaluate(next_state)
-                
-                self.w += value
-                self.n += 1
-                return value
-                
-        def next_action(self, state):
-            t = sum(nodes_to_scores(self.child_nodes))
-            C_PUCT = log10((1+t+19652)/19652+1.25)
-            policies, _ = predict(model, state)
-
-            legal_actions = state.legal_actions()
-
-            pucb_values = []
-            for action, policy in zip(legal_actions, policies):
-                child_node = self.child_nodes[action]
-                child_state = state.next(action)
-                w = -child_node.w if child_state.turn_owner.is_first_player != state.turn_owner.is_first_player else child_node.w
-                pucb_values.append((w / child_node.n if child_node.n else 0.0) +
-                    C_PUCT * policy * sqrt(t) / (1 + child_node.n))
-            
-            return legal_actions[np.argmax(pucb_values)]
-    
     if len(state.legal_actions()) == 1:
         scores = [0]*(TOTAL_ACTION)
         scores[-1] = 1
     else:
-        root_node = node()
+        root_node = Node(is_certain_node=False)
         for _ in range(PV_EVALUATE_COUNT):
-            root_node.evaluate(state)
-        scores = nodes_to_scores(root_node.child_nodes)
+            root_node.evaluate(model, state)
+        scores = root_node.nodes_to_scores()
         
     if temperature == 0:
         action = np.argmax(scores)
@@ -323,7 +271,7 @@ if __name__ == '__main__':
 
     while True:
         if state.is_done():
-            break;
+            break
         state = state.start_turn() if state.is_starting_turn else state
         if state.is_done():
             break
