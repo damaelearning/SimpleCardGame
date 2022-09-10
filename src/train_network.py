@@ -18,11 +18,11 @@ def load_data():
     with history_path.open(mode='rb') as f:
         return pickle.load(f)
 
-def update_best_player():
-    copy(MODEL_DIR/'latest.h5', MODEL_DIR/'best.h5')
+def update_best_player(best_path, latest_path):
+    copy(latest_path, best_path)
     print('Change BestPlayer')
 
-def train_network():
+def train_network(old_model_path, new_model_path):
     if platform.system() == "Darwin":
         from tensorflow.python.compiler.mlcompute import mlcompute
         mlcompute.set_mlc_device(device_name="gpu")
@@ -44,7 +44,7 @@ def train_network():
     y_policies = np.array(y_policies)
     y_values = np.array(y_values)
 
-    model = load_model(MODEL_DIR/'best.h5')
+    model = load_model(old_model_path)
 
     model.compile(loss=['categorical_crossentropy', 'mse'], optimizer='SGD')
 
@@ -63,7 +63,7 @@ def train_network():
             verbose=0, callbacks=[lr_decay, print_callback])
     print('')
 
-    model.save(MODEL_DIR/'latest.h5')
+    model.save(new_model_path)
 
     K.clear_session()
     del model
