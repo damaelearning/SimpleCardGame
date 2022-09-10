@@ -39,7 +39,7 @@ class AutoPlay:
         self.model_path2 = model_path
     
     @classmethod
-    def play(cls, action_names, model_paths, temperature, logging=False):
+    def play(cls, action_names, model_paths, temperature, logging=False, minus_value=False):
         actions = cls.get_actions(action_names, temperature, model_paths)
         # for logging
         history = []
@@ -70,11 +70,14 @@ class AutoPlay:
         if logging:
             for i in range(len(history)):
                 history[i][2] = value if history[i][2] else -value
+        if minus_value:
+            value = -value
         return value, history
 
     @staticmethod
     def get_actions(action_names, temperature, model_paths = [None, None]):
         next_actions = []
+        print(model_paths)
         for action, model_path in zip(action_names, model_paths):
             if action == "mcts":
                 next_actions.append(mcts_action)
@@ -87,35 +90,43 @@ class AutoPlay:
                 model = ModelWrapper(model_path)
                 next_actions.append(next_action_by(search=pv_ismcts, model=model, temperature=temperature))
         return next_actions
-    
+
     @staticmethod
     def _add_history(history, state, policy, shape):
         input = ModelWrapper.convert_state_to_input(state, *shape)
         return history + [[input, policy, state.turn_owner.is_first_player]]
 
     def multi_play(self, process_num, game_count, action_names, model_paths, 
-                        temperature, logging=False, label="Completed", alt_player=True):
+                        temperature, logging=False, label="Completed", alt_player=False):
         def alternate_actions(action_names, i):
-            if alt_player and i%2 == 1:
-                return reversed(action_names) 
+            if alt_player and i%2 == 0:
+                return action_names[::-1] 
             return action_names
         
+        def alternate_model_path(model_path, i):
+            if alt_player and i%2 == 0:
+                return model_path[::-1] 
+            return model_path
+
+        def alternate_value(i):
+            return alt_player and i%2==0
+        
         count = 0
-        value = 0
+        total_value = 0
         historys = []
         canceled = False
         with futures.ProcessPoolExecutor(max_workers=process_num) as executor:
             results = [executor.submit(self.__class__.play, 
                     action_names=alternate_actions(action_names, i), temperature= temperature, 
-                    model_paths=model_paths, logging = logging) 
+                    model_paths=alternate_model_path(model_paths, i), 
+                    logging = logging, minus_value=alternate_value(i)) 
                     for i in range(game_count)]
             try:
                 for result in futures.as_completed(results):
                     value, history = result.result()
                     if logging:
                         historys.extend(history)
-                    
-                    value += value
+                    total_value += value
 
                     count += 1
                     print('\r{} {}/{}'.format(label, count, game_count), end='')
@@ -127,24 +138,25 @@ class AutoPlay:
                     process.kill()
 
         if not canceled and logging: write_data(historys)
-        return value
+        return total_value
     
     def make_play_log(self, process_num, game_count, temperature=1.0, 
-                        process_name="Make play log"):
+                        process_name="Make play log", alt_player=False):
         print(process_name)
-        action_names = (self.action1, self.action2)
-        model_paths = (self.model_path1, self.model_path2)
-        self.multi_play(process_num, game_count, action_names, model_paths, temperature, logging=True, alt_player=False)
+        action_names = [self.action1, self.action2]
+        model_paths = [self.model_path1, self.model_path2]
+        self.multi_play(process_num, game_count, action_names, model_paths, temperature, logging=True, alt_player=alt_player)
 
     def calc_win_rate(self, process_num, game_count, temperature=0.0, 
-                        process_name=None):
+                        process_name=None, alt_player=False):
         if process_name == None:
             process_name = "Calc win rate {} VS {}".format(self.action1, self.action2)
         print(process_name)
         action_names = (self.action1, self.action2)
         model_paths = (self.model_path1, self.model_path2)
-        value = self.multi_play(process_num, game_count, action_names, model_paths, temperature)
-        print("Win rate : {}".format(value/game_count))
+        value = self.multi_play(process_num, game_count, action_names, model_paths, temperature, alt_player=alt_player)
+        value = value/game_count+0.5
+        print("Win rate : {}".format(value))
         return value
 
 
@@ -165,6 +177,6 @@ def write_data(historys):
 
 if __name__ == '__main__':
     auto_play = AutoPlay()
-    auto_play.set_action1("pv_mcts", MODEL_DIR/'best.h5')
-    auto_play.set_action2("pv_mcts", MODEL_DIR/'best.h5')
-    auto_play.make_play_log(3, 1000, 1)
+    auto_play.set_action1("pv_ismcts", MODEL_DIR/'latest.h5')
+    auto_play.set_action2("pv_ismcts", MODEL_DIR/'best.h5')
+    auto_play.calc_win_rate(5, 30, 0.0, alt_player=True)

@@ -8,7 +8,7 @@ from game import INITIAL_LIFE, HANDS_NUM, DECK_NUM
 from math import ceil
 from tensorflow.keras.models import load_model
 
-# enable toe use GPU and limit memory
+# enable to use GPU and limit memory
 import platform
 if platform.system() == "Darwin":
     from tensorflow.python.compiler.mlcompute import mlcompute
