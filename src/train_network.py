@@ -1,11 +1,4 @@
 import tensorflow as tf
-physical_devices = tf.config.list_physical_devices('GPU')
-if len(physical_devices) > 0:
-    for device in physical_devices:
-        tf.config.experimental.set_memory_growth(device, True)
-        print('{} memory growth: {}'.format(device, tf.config.experimental.get_memory_growth(device)))
-else:
-    print("Not enough GPU hardware devices available")
 from game import INITIAL_LIFE
 from dual_network import DN_INPUT_SHAPE
 from tensorflow.keras.callbacks import LearningRateScheduler, LambdaCallback
@@ -15,6 +8,8 @@ from pathlib import Path
 import numpy as np
 import pickle
 from const import HISTORY_DIR, MODEL_DIR
+import platform
+import copy
 
 RN_EPOCHS = 100
 
@@ -23,18 +18,33 @@ def load_data():
     with history_path.open(mode='rb') as f:
         return pickle.load(f)
 
-def train_network():
+def update_best_player(best_path, latest_path):
+    copy(latest_path, best_path)
+    print('Change BestPlayer')
+
+def train_network(old_model_path, new_model_path):
+    if platform.system() == "Darwin":
+        from tensorflow.python.compiler.mlcompute import mlcompute
+        mlcompute.set_mlc_device(device_name="gpu")
+    else:
+        physical_devices = tf.config.list_physical_devices('GPU')
+        if len(physical_devices) > 0:
+            for device in physical_devices:
+                tf.config.experimental.set_memory_growth(device, True)
+                print('{} memory growth: {}'.format(device, tf.config.experimental.get_memory_growth(device)))
+        else:
+            print("Not enough GPU hardware devices available")
     history = load_data()
     xs, y_policies, y_values = zip(*history)
 
-    a, b, c = DN_INPUT_SHAPE
+    height, width, channel = DN_INPUT_SHAPE
     xs = np.array(xs)
     xs = xs.transpose(0, 2, 3, 1)
-    xs = xs.reshape(len(xs), a, b, c)   
+    xs = xs.reshape(len(xs), height, width, channel)   
     y_policies = np.array(y_policies)
     y_values = np.array(y_values)
 
-    model = load_model(MODEL_DIR/'best.h5')
+    model = load_model(old_model_path)
 
     model.compile(loss=['categorical_crossentropy', 'mse'], optimizer='SGD')
 
@@ -49,11 +59,11 @@ def train_network():
         on_epoch_begin=lambda epoch,logs:
                 print('\rTrain {}/{}'.format(epoch + 1,RN_EPOCHS), end=''))
     
-    model.fit(xs, [y_policies, y_values], batch_size=128, epochs=RN_EPOCHS,
+    model.fit(xs, [y_policies, y_values], batch_size=256, epochs=RN_EPOCHS,
             verbose=0, callbacks=[lr_decay, print_callback])
     print('')
 
-    model.save(MODEL_DIR/'latest.h5')
+    model.save(new_model_path)
 
     K.clear_session()
     del model
