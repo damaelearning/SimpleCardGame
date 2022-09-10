@@ -8,7 +8,7 @@ from game import INITIAL_LIFE, HANDS_NUM, DECK_NUM
 from math import ceil
 from tensorflow.keras.models import load_model
 
-# enable toe use GPU and limit memory
+# enable to use GPU and limit memory
 import platform
 if platform.system() == "Darwin":
     from tensorflow.python.compiler.mlcompute import mlcompute
@@ -77,6 +77,7 @@ class ModelWrapper():
         channel.extend([np.full((width), player.life) for _ in range(2)])
         channel.extend([np.full((width), player.max_play_point) for _ in range(2)])
         channel.extend([np.full((width), player.play_point) for _ in range(2)])
+        channel.extend([np.full((width), 0) for _ in range(2)])
         return np.vstack(channel)
 
     @staticmethod
