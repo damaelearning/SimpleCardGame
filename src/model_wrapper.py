@@ -77,6 +77,7 @@ class ModelWrapper():
         channel.extend([np.full((width), player.life) for _ in range(2)])
         channel.extend([np.full((width), player.max_play_point) for _ in range(2)])
         channel.extend([np.full((width), player.play_point) for _ in range(2)])
+        channel.extend([np.zeros((width)) for _ in range(2)])
         return np.vstack(channel)
 
     @staticmethod
