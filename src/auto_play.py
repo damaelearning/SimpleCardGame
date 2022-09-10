@@ -43,7 +43,7 @@ class AutoPlay:
         actions = cls.get_actions(action_names, temperature, model_paths)
         # for logging
         history = []
-        height, width, channel = DN_INPUT_SHAPE
+        shape = DN_INPUT_SHAPE
 
         # initialize game state
         first_player = Actor(is_first_player=True)
@@ -62,8 +62,7 @@ class AutoPlay:
             action, policy = next_action(state)
 
             if logging:
-                input = ModelWrapper.convert_state_to_input(state, height, width, channel)
-                history.append([input, policy, state.turn_owner.is_first_player])
+                history = cls._add_history(history, state, policy, shape)
 
             state = state.next(action)
         
@@ -88,6 +87,11 @@ class AutoPlay:
                 model = ModelWrapper(model_path)
                 next_actions.append(next_action_by(search=pv_ismcts, model=model, temperature=temperature))
         return next_actions
+    
+    @staticmethod
+    def _add_history(history, state, policy, shape):
+        input = ModelWrapper.convert_state_to_input(state, *shape)
+        return history + [[input, policy, state.turn_owner.is_first_player]]
 
     def multi_play(self, process_num, game_count, action_names, model_paths, 
                         temperature, logging=False, label="Completed", alt_player=True):
@@ -163,4 +167,4 @@ if __name__ == '__main__':
     auto_play = AutoPlay()
     auto_play.set_action1("pv_mcts", MODEL_DIR/'best.h5')
     auto_play.set_action2("pv_mcts", MODEL_DIR/'best.h5')
-    auto_play.calc_win_rate(3, 1000, 1)
+    auto_play.make_play_log(3, 1000, 1)
