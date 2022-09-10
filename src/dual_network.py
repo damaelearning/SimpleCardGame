@@ -9,7 +9,7 @@ from const import MODEL_DIR
 
 DN_FILTERS = 128
 DN_RESIDUAL_NUM = 16
-DN_INPUT_SHAPE = (7,5,10)
+DN_INPUT_SHAPE = (9,5,10)
 DN_OUTPUT_SIZE = FIELDS_NUM*(FIELDS_NUM+1)+HANDS_NUM+1
 
 def conv(filters):
@@ -29,11 +29,11 @@ def residual_block():
         return x
     return f
         
-def dual_network():
-    if os.path.exists(MODEL_DIR/'best.h5'):
+def dual_network(path, input_shape):
+    if os.path.exists(path):
         return
     
-    input = Input(shape=DN_INPUT_SHAPE)
+    input = Input(shape=input_shape)
     
     x = conv(DN_FILTERS)(input)
     x = BatchNormalization()(x)
@@ -51,11 +51,10 @@ def dual_network():
     
     model = Model(inputs=input, outputs=[p,v])
     
-    os.makedirs(MODEL_DIR, exist_ok=True)
-    model.save(MODEL_DIR/'best.h5')
+    model.save(path)
     
     K.clear_session()
     del model
 
 if __name__ == '__main__':
-    dual_network()
+    dual_network(MODEL_DIR/"case2_best.h5", (9, 5, 16))
