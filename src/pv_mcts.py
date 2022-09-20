@@ -173,16 +173,19 @@ def boltzman(xs, temperature):
     return [x / sum(xs) for x in xs]
 
 if __name__ == '__main__':
-    path = sorted(Path(MODEL_DIR).glob('best.h5'))[-1]
-    model = ModelWrapper(str(path))
-    
+    current_dir = os.getcwd()
+    latest_path = current_dir+"/note/optimize_input_shape/case1_best.h5"
+    best_path = current_dir+"/note/optimize_input_shape/case1_best.h5"
+    latest_model = ModelWrapper(latest_path)
+    best_model  = ModelWrapper(best_path)
+    from search import ismcts_action
 
     first_player = Actor(is_first_player=True)
     second_player = Actor(is_first_player=False)
     state = State(first_player, second_player)
     state = state.game_start()
     
-    next_action = next_action_by(pv_ismcts, model, 1.0)
+    next_actions = (next_action_by(pv_ismcts, best_model, 0.0), ismcts_action)
 
     while True:
         if state.is_done():
@@ -191,7 +194,7 @@ if __name__ == '__main__':
         if state.is_done():
             break
         
-        action, _ = next_action(state)
+        action, _ = next_actions[0](state) if state.turn_owner.is_first_player else next_actions[1](state)
         
         state = state.next(action)
         
