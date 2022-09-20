@@ -30,6 +30,7 @@ class AutoPlay:
         self.action2 = None
         self.model_path1 = None
         self.model_path2 = None
+        self.history_dir = HISTORY_DIR
     
     def set_action1(self, action, model_path=None):
         self.action1 = action
@@ -39,6 +40,9 @@ class AutoPlay:
         self.action2 = action
         self.model_path2 = model_path
     
+    def set_history_dir(self, dir):
+        self.history_dir = dir
+
     @classmethod
     def play(cls, action_names, model_paths, temperature, logging=False, minus_value=False):
         actions = cls.get_actions(action_names, temperature, model_paths)
@@ -138,7 +142,7 @@ class AutoPlay:
                 for process in executor._processes.values():
                     process.kill()
 
-        if not canceled and logging: write_data(historys)
+        if not canceled and logging: write_data(self.history_dir, historys)
         return total_value
     
     def make_play_log(self, process_num, game_count, temperature=1.0, 
@@ -168,10 +172,10 @@ def first_player_value(ended_state):
         return 1 if ended_state.turn_owner.is_first_player else -1
     return 0
 
-def write_data(historys):
+def write_data(history_dir, historys):
     now = datetime.now()
-    os.makedirs(HISTORY_DIR, exist_ok=True)
-    path = HISTORY_DIR/'{:04}{:02}{:02}{:02}{:02}{:02}.history'.format(
+    os.makedirs(history_dir, exist_ok=True)
+    path = history_dir/'{:04}{:02}{:02}{:02}{:02}{:02}.history'.format(
         now.year, now.month, now.day, now.hour, now.minute, now.second)
     with open(path, mode='wb') as f:
         pickle.dump(historys, f)
