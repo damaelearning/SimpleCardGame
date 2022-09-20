@@ -1,4 +1,5 @@
 from faulthandler import cancel_dump_traceback_later
+from tkinter import E
 import tensorflow as tf
 import time
 from game import INITIAL_LIFE, State, Actor, FIELDS_NUM, HANDS_NUM
@@ -71,6 +72,7 @@ class AutoPlay:
             state = state.next(action)
         
         value = first_player_value(state)
+        print(action_names[0], value)
         if logging:
             for i in range(len(history)):
                 history[i][2] = value if history[i][2] else -value
@@ -81,7 +83,6 @@ class AutoPlay:
     @staticmethod
     def get_actions(action_names, temperature, model_paths = [None, None]):
         next_actions = []
-        print(model_paths)
         for action, model_path in zip(action_names, model_paths):
             if action == "mcts":
                 next_actions.append(mcts_action)
@@ -159,7 +160,7 @@ class AutoPlay:
         action_names = (self.action1, self.action2)
         model_paths = (self.model_path1, self.model_path2)
         value = self.multi_play(process_num, game_count, action_names, model_paths, temperature, alt_player=alt_player)
-        value = value/game_count+0.5
+        value = value/game_count*0.5+0.5
         print("Win rate : {}".format(value))
         return value
 
@@ -182,5 +183,5 @@ def write_data(history_dir, historys):
 if __name__ == '__main__':
     auto_play = AutoPlay()
     auto_play.set_action1("pv_ismcts", MODEL_DIR/'latest.h5')
-    auto_play.set_action2("pv_ismcts", MODEL_DIR/'best.h5')
+    auto_play.set_action2("ismcts")
     auto_play.calc_win_rate(5, 30, 0.0, alt_player=True)

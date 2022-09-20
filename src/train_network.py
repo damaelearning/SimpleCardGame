@@ -9,7 +9,7 @@ import numpy as np
 import pickle
 from const import HISTORY_DIR, MODEL_DIR
 import platform
-import copy
+from shutil import copy
 
 RN_EPOCHS = 100
 
