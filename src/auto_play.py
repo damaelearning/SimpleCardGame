@@ -72,7 +72,6 @@ class AutoPlay:
             state = state.next(action)
         
         value = first_player_value(state)
-        print(action_names[0], value)
         if logging:
             for i in range(len(history)):
                 history[i][2] = value if history[i][2] else -value

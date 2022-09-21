@@ -85,4 +85,4 @@ if __name__ == "__main__":
     self_play = AutoPlayCase3()
     self_play.set_action1("ismcts")
     self_play.set_action2("ismcts")
-    self_play.make_play_log(5, 2000, 1.0, "Self Play")
+    self_play.make_play_log(5, 10, 1.0, "Self Play")
