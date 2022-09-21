@@ -82,27 +82,7 @@ class AutoPlayCase3(AutoPlay):
         return history+[[input, policy, state.turn_owner.is_first_player]]
 
 if __name__ == "__main__":
-    model_path = os.path.dirname(os.path.abspath(__file__))+"/case3_best.h5"
-    dual_network(model_path, (40,5,2))
-    model = ModelWrapperCase3(str(model_path))
-    
-
-    first_player = Actor(is_first_player=True)
-    second_player = Actor(is_first_player=False)
-    state = State(first_player, second_player)
-    state = state.game_start()
-    
-    next_action = next_action_by(pv_ismcts, model, 1.0)
-
-    while True:
-        if state.is_done():
-            break
-        state = state.start_turn() if state.is_starting_turn else state
-        if state.is_done():
-            break
-        
-        action, _ = next_action(state)
-        
-        state = state.next(action)
-        
-        print(state)
+    self_play = AutoPlayCase3()
+    self_play.set_action1("ismcts")
+    self_play.set_action2("ismcts")
+    self_play.make_play_log(5, 2000, 1.0, "Self Play")

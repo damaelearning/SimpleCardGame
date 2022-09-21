@@ -94,7 +94,9 @@ def mcts_action(state):
             return self.child_nodes[argmax(ucb1_values)]
     
     if len(state.legal_actions()) == 1:
-        return FIELDS_NUM*(FIELDS_NUM+1)+HANDS_NUM, None
+        policy = [0]*(TOTAL_ACTION)
+        policy[-1] = 1
+        return FIELDS_NUM*(FIELDS_NUM+1)+HANDS_NUM, policy
 
     root_node = Node(state)
     root_node.expand()
@@ -103,10 +105,11 @@ def mcts_action(state):
         root_node.evaluate()
     
     legal_actions = state.legal_actions()
-    n_list = []
-    for c in root_node.child_nodes:
-        n_list.append(c.n)
-    return legal_actions[argmax(n_list)], None
+    n_list = [0]*TOTAL_ACTION
+    for action in legal_actions:
+        c = root_node.child_nodes[action]
+        n_list[action] = c.n
+    return legal_actions[argmax(n_list)], [n/sum(n_list) for n in n_list]
 
 def ismcts_action(state):
     class Node:
@@ -173,7 +176,9 @@ def ismcts_action(state):
             return legal_actions[argmax(ucb1_values)]
     
     if len(state.legal_actions()) == 1:
-        return PASS_NUM, None
+        policy = [0]*(TOTAL_ACTION)
+        policy[-1] = 1
+        return PASS_NUM, policy
     
     root_node = Node()
     root_node.expand()
@@ -181,8 +186,8 @@ def ismcts_action(state):
         root_node.evaluate(state)
     
     legal_actions = state.legal_actions()
-    n_list = []
+    n_list = [0]*TOTAL_ACTION
     for action in legal_actions:
         c = root_node.child_nodes[action]
-        n_list.append(c.n)
-    return legal_actions[argmax(n_list)], None
+        n_list[action] = c.n
+    return argmax(n_list), [n/sum(n_list) for n in n_list]
