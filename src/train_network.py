@@ -11,10 +11,8 @@ from const import HISTORY_DIR, MODEL_DIR
 import platform
 from shutil import copy
 
-RN_EPOCHS = 100
 
-def load_data():
-    history_path = sorted(Path(HISTORY_DIR).glob('*.history'))[-1]
+def load_data(history_path):
     with history_path.open(mode='rb') as f:
         return pickle.load(f)
 
@@ -22,7 +20,8 @@ def update_best_player(best_path, latest_path):
     copy(latest_path, best_path)
     print('Change BestPlayer')
 
-def train_network(old_model_path, new_model_path):
+def train_network(old_model_path, new_model_path, batch_size, epochs = 100, shape=DN_INPUT_SHAPE, 
+        history_path = sorted(Path(HISTORY_DIR).glob('*.history'))[-1]):
     if platform.system() == "Darwin":
         from tensorflow.python.compiler.mlcompute import mlcompute
         mlcompute.set_mlc_device(device_name="gpu")
@@ -34,15 +33,15 @@ def train_network(old_model_path, new_model_path):
                 print('{} memory growth: {}'.format(device, tf.config.experimental.get_memory_growth(device)))
         else:
             print("Not enough GPU hardware devices available")
-    history = load_data()
-    xs, y_policies, y_values = zip(*history)
+    history = load_data(history_path)
+    input, policies, values = zip(*history)
 
-    height, width, channel = DN_INPUT_SHAPE
-    xs = np.array(xs)
-    xs = xs.transpose(0, 2, 3, 1)
-    xs = xs.reshape(len(xs), height, width, channel)   
-    y_policies = np.array(y_policies)
-    y_values = np.array(y_values)
+    height, width, channel = shape
+    input = np.array(input)
+    input = input.transpose(0, 2, 3, 1)
+    input = input.reshape(len(input), height, width, channel)   
+    policies = np.array(policies)
+    values = np.array(values)
 
     model = load_model(old_model_path)
 
@@ -57,9 +56,9 @@ def train_network(old_model_path, new_model_path):
 
     print_callback = LambdaCallback(
         on_epoch_begin=lambda epoch,logs:
-                print('\rTrain {}/{}'.format(epoch + 1,RN_EPOCHS), end=''))
+                print('\rTrain {}/{}'.format(epoch + 1,epochs), end=''))
     
-    model.fit(xs, [y_policies, y_values], batch_size=256, epochs=RN_EPOCHS,
+    model.fit(input, [policies, values], batch_size=batch_size, epochs=epochs,
             verbose=0, callbacks=[lr_decay, print_callback])
     print('')
 
