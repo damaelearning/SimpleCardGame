@@ -15,7 +15,7 @@ import numpy as np
 
 class ModelWrapperCase2(ModelWrapper):
     def predict(self, state):
-        height, width, channel = (9, 5, 16)
+        height, width, channel = (9, 5, 18)
         input = self.convert_state_to_input(state, height, width, channel)
 
         input = input.transpose(1, 2, 0)
@@ -35,7 +35,7 @@ class ModelWrapperCase2(ModelWrapper):
         h_deck = ceil(DECK_NUM/width)
         coef = 1/INITIAL_LIFE
         sizes = [width, (h_hands, width), (h_deck, width)]
-        funcs = [cls._get_attack_list, cls._get_health_list, cls._get_play_point_list, cls._get_card_type_list]
+        funcs = [cls._get_attack_list, cls._get_health_list, cls._get_play_point_list, cls._get_has_fanfare_list, cls._get_has_storm_list]
         #for turn owner
         input=[]
         cards_list = [turn_owner.fields, turn_owner.hands, turn_owner.deck]
@@ -83,14 +83,11 @@ class AutoPlayCase2(AutoPlay):
 
     @staticmethod
     def _add_history(history, state, policy, shape):
-        input = ModelWrapperCase2.convert_state_to_input(state, 9, 5, 16)
+        input = ModelWrapperCase2.convert_state_to_input(state, 9, 5, 18)
         return history+[[input, policy, state.turn_owner.is_first_player]]
 
 if __name__ == "__main__":
-    model_path = os.path.dirname(os.path.abspath(__file__))+"/case2_best.h5"
-    model = ModelWrapperCase2(model_path)
-    player = Actor(is_first_player=True)
-    enemy = Actor(is_first_player=False)
-    state = State(player, enemy)
-    state = state.game_start()
-    model.predict(state)
+    self_play = AutoPlayCase2()
+    self_play.set_action1("ismcts")
+    self_play.set_action2("ismcts")
+    self_play.make_play_log(5, 2000, 1.0, "Self Play")

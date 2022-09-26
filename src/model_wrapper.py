@@ -50,7 +50,7 @@ class ModelWrapper():
         h_deck = ceil(DECK_NUM/width)
         coef = 1/INITIAL_LIFE
         sizes = [width, (h_hands, width), (h_deck, width)]
-        funcs = [cls._get_attack_list, cls._get_health_list, cls._get_play_point_list, cls._get_card_type_list]
+        funcs = [cls._get_attack_list, cls._get_health_list, cls._get_play_point_list, cls._get_has_fanfare_list, cls._get_has_storm_list]
         #for turn owner
         input=[]
         cards_list = [turn_owner.fields, turn_owner.hands, turn_owner.deck]
@@ -87,8 +87,12 @@ class ModelWrapper():
         return return_array
 
     @staticmethod
-    def _get_card_type_list(input_list):
+    def _get_has_fanfare_list(input_list):
         return [int(card.has_fanfare) for card in input_list]
+    
+    @staticmethod
+    def _get_has_storm_list(input_list):
+        return [int(card.__class__.__name__ == "CardHasStorm") for card in input_list]
 
     @staticmethod
     def _get_play_point_list(input_list):
