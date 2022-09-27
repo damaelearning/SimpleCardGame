@@ -5,3 +5,4 @@ model/
 *.h5
 *.pyc
 *.lprof
+*.history
